@@ -1,0 +1,22 @@
+{
+  "name": "paywright-session",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:rc": "TEST_ENV=rc playwright test",
+    "test:qa": "TEST_ENV=qa playwright test",
+    "test:regression": "TEST_ENV=regression playwright test",
+    "test:support": "TEST_ENV=support playwright test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.4.1",
+    "dotenv": "^17.4.2"
+  }
+}
