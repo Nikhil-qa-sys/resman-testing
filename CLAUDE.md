@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Playwright + TypeScript end-to-end test project (`resman-testing`). Currently only the scaffolded example spec exists — this is the starting point for a test suite, not an application.
+A Playwright + TypeScript end-to-end test project (`resman-testing`) that drives the ResMan web application. It is a test suite, not an application — there is no app source in this repo, so locators are written against the live DOM (Mode B in `.claude/rules/playwright-scripting.md`).
 
 ## Commands
 
@@ -15,8 +15,8 @@ npm run test:qa           # run against the qa environment (default)
 npm run test:regression   # run against the regression environment
 npm run test:support      # run against the support environment
 
-npx playwright test tests/example.spec.ts    # run a single test file
-npx playwright test -g "has title"           # run tests matching a title
+npx playwright test tests/property/buildings.spec.ts   # run a single test file
+npx playwright test -g "QA-01"                         # run tests matching a title or case id
 npx playwright test --project=chromium       # run against one browser only
 npx playwright test --ui                     # interactive UI mode
 npx playwright test --debug                  # step-through debug mode
@@ -24,7 +24,19 @@ npx playwright codegen                       # record a new test by clicking thr
 npx playwright show-report                   # open the last HTML report
 ```
 
-There is no lint or build step configured.
+`npm run typecheck` (`tsc --noEmit`) is the only static check. It matters more than it
+looks: Playwright strips types without checking them, so a test run never catches
+drift in the environment-keyed test-data store — a case or field missing from one
+environment object is a compile error only. There is no lint or build step.
+
+## CI
+
+`.github/workflows/ci.yml` gates PRs into `main` and pushes to `main`: a `Typecheck`
+job, then an `E2E (qa, chromium)` job that runs the suite against qa. The `.env/`
+files are gitignored and absent in CI — `dotenv` no-ops on a missing path, so the
+config falls through to the `QA_BASE_URL`, `QA_TEST_USERNAME` and `QA_TEST_PASSWORD`
+repository secrets. Each e2e run creates a real building on the shared qa
+environment; there is no teardown.
 
 ## Environment configuration
 

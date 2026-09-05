@@ -1,0 +1,90 @@
+name: CI
+
+# Gates everything landing on main. Runs on PRs into main, and again on main
+# itself so a direct push (or an admin override of branch protection) is still
+# checked.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  # Supersede an in-flight run when new commits land on the same ref, so a PR
+  # never has two e2e runs creating buildings at once.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Playwright strips types without checking them, so this is the only thing
+      # that catches environment drift in the test-data store — a case or field
+      # missing from one environment object is a compile error, never a run
+      # failure. See .claude/rules/playwright-architecture.md.
+      - run: npm run typecheck
+
+  e2e:
+    name: E2E (qa, chromium)
+    runs-on: ubuntu-latest
+    # Types are broken? Don't spend a browser run — or create test data — to
+    # find that out.
+    needs: typecheck
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Fail loudly and early rather than letting the suite time out against an
+      # empty BASE_URL, which surfaces as an unrelated-looking navigation error.
+      - name: Check required secrets are configured
+        env:
+          BASE_URL: ${{ secrets.QA_BASE_URL }}
+          TEST_USERNAME: ${{ secrets.QA_TEST_USERNAME }}
+          TEST_PASSWORD: ${{ secrets.QA_TEST_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$BASE_URL" ] && missing="$missing QA_BASE_URL"
+          [ -z "$TEST_USERNAME" ] && missing="$missing QA_TEST_USERNAME"
+          [ -z "$TEST_PASSWORD" ] && missing="$missing QA_TEST_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing"
+            echo "Add them under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - run: npx playwright install --with-deps chromium
+
+      # The .env/ files are gitignored and absent here. dotenv no-ops on a
+      # missing path, so playwright.config.ts falls through to these values.
+      - name: Run Playwright tests
+        env:
+          TEST_ENV: qa
+          BASE_URL: ${{ secrets.QA_BASE_URL }}
+          TEST_USERNAME: ${{ secrets.QA_TEST_USERNAME }}
+          TEST_PASSWORD: ${{ secrets.QA_TEST_PASSWORD }}
+        run: npx playwright test --project=chromium
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
