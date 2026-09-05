@@ -477,15 +477,15 @@ prefixed with the **test case ID** in the form `<ID> | <behavior>`. The ID makes
 the case selectable on the command line (`npx playwright test -g "QA-01"`) and is
 the key its data is stored under.
 
-Declare the ID once as a `const` and use it for both the title and the data
-lookup — never type the same ID twice in one spec.
+Write the ID as a literal in both the title and the data lookup. A spec file
+holds many cases, so a module-level `TEST_CASE_ID` const does not scale — and a
+literal at the call site keeps the id next to the test that uses it. Note that a
+hyphenated id needs bracket access: `testData.QA-01` is a syntax error.
 
 ```typescript
-// GOOD: id declared once, used for the title and the data lookup
-const TEST_CASE_ID = 'QA-01'
-
-test(`${TEST_CASE_ID} | User can create a new building for the selected property`, async ({ page }) => {
-  const testData = getBuildingTestData(TEST_CASE_ID)
+// GOOD: the id is a literal in the title and in the data lookup
+test('QA-01 | User can create a new building for the selected property', async ({ page }) => {
+  await boardRoomPage.selectProperty(testData['QA-01'].property)
   // ...
 })
 
@@ -496,10 +496,9 @@ test('QA-03 | Admin can create a new course', ...)
 // BAD: no test case id
 test('User can log in with valid credentials', ...)
 
-// BAD: id repeated instead of reused from the const
-test('QA-01 | User can create a new building', async ({ page }) => {
-  const testData = getBuildingTestData('QA-01')
-})
+// BAD: a module-level const — it reads well in a file with one test and becomes
+// thirty near-identical consts in a file with thirty
+const TEST_CASE_ID = 'QA-01'
 
 // BAD: describes implementation
 test('test login', ...)
@@ -555,20 +554,19 @@ only finished when it has been checked.
 
 ```typescript
 // GOOD: one step per phase, each verifying its own outcome
-test(`${TEST_CASE_ID} | User can create a new building for the selected property`, async ({ page }) => {
+test('QA-01 | User can create a new building for the selected property', async ({ page }) => {
   const loginPage = new LoginPage(page)
   const boardRoomPage = new BoardRoomPage(page)
   const sideNavComponent = new SideNavComponent(page)
-  const testData = getBuildingTestData(TEST_CASE_ID)
 
   await test.step('Log in to ResMan', async () => {
     await loginPage.signIn(process.env.TEST_USERNAME!, process.env.TEST_PASSWORD!)
     await expect(sideNavComponent.menu()).toBeVisible()
   })
 
-  await test.step(`Select the "${testData.property}" property on the BoardRoom`, async () => {
-    await boardRoomPage.selectProperty(testData.property)
-    await expect(boardRoomPage.propertySelector()).toHaveValue(testData.property)
+  await test.step(`Select the "${testData['QA-01'].property}" property on the BoardRoom`, async () => {
+    await boardRoomPage.selectProperty(testData['QA-01'].property)
+    await expect(boardRoomPage.propertySelector()).toHaveValue(testData['QA-01'].property)
   })
 
   await test.step('Navigate to Property > Buildings', async () => {
@@ -671,8 +669,7 @@ data store and reach the spec through its test case ID; credentials come from
 
 ```typescript
 // GOOD: every environment-specific value arrives from the store
-const testData = getBuildingTestData(TEST_CASE_ID)
-await boardRoomPage.selectProperty(testData.property)
+await boardRoomPage.selectProperty(testData['QA-01'].property)
 
 // BAD: literal that only exists on one environment
 await boardRoomPage.selectProperty('Beta Tree - Automation')

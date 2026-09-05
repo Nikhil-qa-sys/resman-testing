@@ -103,7 +103,7 @@ import { expect, test } from '@playwright/test'
 import { LoginPage } from '../../playwright-utils/pages/login-page'
 import { DashboardPage } from '../../playwright-utils/pages/dashboard-page'
 import { AccountsPage } from '../../playwright-utils/pages/accounts-page'
-import { getAccountsTestData } from '../../playwright-utils/helpers/test-data'
+import { testData } from '../../playwright-utils/test-data/accounts.data'
 
 const TEST_CASE_ID = 'QA-05'
 
@@ -111,15 +111,14 @@ test(`${TEST_CASE_ID} | User can select a property and open its accounts`, async
   const loginPage = new LoginPage(page)
   const dashboardPage = new DashboardPage(page)
   const accountsPage = new AccountsPage(page)
-  const testData = getAccountsTestData(TEST_CASE_ID)
 
   await test.step('Log in', async () => {
     await loginPage.login(process.env.TEST_USERNAME!, process.env.TEST_PASSWORD!)
     await expect(dashboardPage.propertySelector()).toBeVisible()
   })
 
-  await test.step(`Open accounts for "${testData.property}"`, async () => {
-    await dashboardPage.selectProperty(testData.property)
+  await test.step(`Open accounts for "${testData['QA-05'].property}"`, async () => {
+    await dashboardPage.selectProperty(testData['QA-05'].property)
     await expect(accountsPage.accountsList()).toBeVisible()
   })
 })
@@ -219,68 +218,104 @@ playwright-utils/
     admin-page.ts
     accounts-page.ts
   fixtures/                  # Only for resources needing setup/teardown (DB, API clients)
-  helpers/
-    test-data.ts             # Environment-keyed test data, keyed by test case ID
+  test-data/                 # Data only — no functions, no types, no barrel file
+    buildings.data.ts        # Buildings cases for qa / rc / regression
+    accounts.data.ts         # Accounts cases for qa / rc / regression
+  helpers/                   # Stateless utilities with no test data in them
 ```
 
 ## Environment-Specific Test Data
 
-Every value a test needs that is not a credential lives in
-`playwright-utils/helpers/test-data.ts`, keyed **first by test case ID, then by
-environment**. The suite runs against `qa`, `rc` and `regression`, and the same
-spec must pass on all of them — so a test case declares a full record for each.
+Every value a test needs that is not a credential lives under
+`playwright-utils/test-data/`, organised as **one object per environment**, each
+holding its test case ids and their data.
 
-Typing the store as `Record<string, Record<TestEnv, ...>>` makes that a compile
-error rather than a convention: a test case that forgets an environment does not
-build.
+**A test data file holds data and nothing else** — no functions, no type
+declarations, no helpers. Types belong to the page object that consumes the data;
+behaviour belongs to the page object that acts on it. A reader opening a data file
+should see only values.
+
+**One file per spec area, not one file for the suite.** A single store holding
+every case for every environment grows into thousands of lines and turns every new
+case into a merge conflict. `buildings.data.ts` holds the Buildings cases and is
+imported directly by `buildings.spec.ts`; each file stays the size of the spec it
+serves. No barrel file — a spec imports the one data file it needs.
+
+The first environment object is written plainly; the others are annotated
+`typeof <first>TestData`. That single annotation forces every environment to
+declare the same cases with the same fields — a missing case or a dropped field is
+a compile error, with no type alias in the file to maintain.
 
 ```typescript
-// playwright-utils/helpers/test-data.ts
-export type TestEnv = 'qa' | 'rc' | 'regression'
+// playwright-utils/test-data/buildings.data.ts
 
-const TEST_DATA: Record<string, Record<TestEnv, DeclaredBuildingTestData>> = {
+// Get environment from process.env — TEST_ENV is the variable playwright.config.ts
+// selects .env/.env.<env> with, and it defaults to qa in both places.
+const ENV = process.env.TEST_ENV || 'qa'
+
+// QA environment test data
+const qaTestData = {
   'QA-01': {
-    qa: { property: 'Beta Tree - Automation', building: { namePrefix: 'qaBld', floors: '4', /* ... */ } },
-    rc: { property: 'Beta Tree - Automation', building: { namePrefix: 'rcBld', floors: '4', /* ... */ } },
-    regression: { property: 'Beta Tree - Automation', building: { namePrefix: 'regBld', floors: '4', /* ... */ } },
+    property: 'Beta Tree - Automation',
+    building: { namePrefix: 'qaBld', floors: '4', /* ... */ },
   },
 }
 
-// Mirrors the TEST_ENV default in playwright.config.ts
-export function currentEnv(): TestEnv {
-  return (process.env.TEST_ENV || 'qa') as TestEnv
+// RC environment test data
+const rcTestData: typeof qaTestData = {
+  'QA-01': { property: 'Beta Tree - Automation', building: { namePrefix: 'rcBld', /* ... */ } },
 }
 
-export function getBuildingTestData(testCaseId: string): BuildingTestData {
-  const environment = currentEnv()
-  const testCase = TEST_DATA[testCaseId]
-  if (!testCase) {
-    throw new Error(`No test data declared for test case "${testCaseId}"`)
-  }
-  const declared = testCase[environment]
-  if (!declared) {
-    throw new Error(`Test case "${testCaseId}" declares no data for TEST_ENV="${environment}"`)
-  }
-  // ...
+// Regression environment test data
+const regressionTestData: typeof qaTestData = {
+  'QA-01': { property: 'Beta Tree - Automation', building: { namePrefix: 'regBld', /* ... */ } },
 }
+
+// Export test data based on environment
+let testData = qaTestData
+if (ENV === 'qa') {
+  testData = qaTestData
+}
+if (ENV === 'rc') {
+  testData = rcTestData
+}
+if (ENV === 'regression') {
+  testData = regressionTestData
+}
+
+export { testData }
+```
+
+The spec imports `testData` and passes values straight into page object methods.
+A hyphenated id needs bracket access — `testData.QA-01` is a syntax error, since
+`-` parses as subtraction:
+
+```typescript
+import { testData } from '../../playwright-utils/test-data/buildings.data'
+
+await boardRoomPage.selectProperty(testData['QA-01'].property)
+await newBuildingPage.addBuilding(testData['QA-01'].building)
 ```
 
 Rules for the store:
 
-- **Resolution reads `process.env.TEST_ENV`** and defaults to the same environment
-  `playwright.config.ts` does. A spec never reads `TEST_ENV` itself
-- **Throw a named error** when a test case or one of its environments is missing.
-  A clear "declares no data for TEST_ENV=…" beats a test failing on `undefined`
-- **Declare every field per environment**, even where the values happen to match
-  today. That is what lets one environment's value change without touching the spec
+- **One object per environment**, named `<env>TestData`, each keyed by test case
+  id. A new test case is added to all three objects in the same edit
+- **Data only** — a function or an exported type in a data file means logic has
+  leaked out of the page object it belongs to
+- **Later environment objects are annotated `typeof <first>TestData`**, so the
+  compiler enforces that every environment declares every case and every field
+- **Resolution reads `process.env.TEST_ENV`** once, at module level, and defaults
+  to the same environment `playwright.config.ts` does. A spec never reads
+  `TEST_ENV` itself
+- **Values the application constrains are completed by the page object.** Where a
+  field must be unique per run, the data declares a *prefix* and the page object
+  that submits the form generates the rest, so the rule lives with the form that
+  imposes it. That method returns what it created
 - **Credentials stay in `.env/.env.<env>`** and reach the spec through
   `process.env.TEST_USERNAME` / `TEST_PASSWORD` — never in the data store
-- **Generate values the application requires to be unique.** Where a field must be
-  distinct per run, declare a *prefix* in the store and append the unique suffix at
-  resolution time, so the declared data stays readable. Respect any length limit
-  the application enforces
-- **Adding an environment** means adding it to `TestEnv` and to every test case —
-  the compiler lists the ones still missing
+- **Run `npm run typecheck`.** Playwright strips types without checking them, so a
+  test run will not catch environment drift — only the type-check will
 
 ## Configuration Best Practices
 

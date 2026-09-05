@@ -8,7 +8,8 @@
     "test:rc": "TEST_ENV=rc playwright test",
     "test:qa": "TEST_ENV=qa playwright test",
     "test:regression": "TEST_ENV=regression playwright test",
-    "test:support": "TEST_ENV=support playwright test"
+    "test:support": "TEST_ENV=support playwright test",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -18,6 +19,7 @@
     "@playwright/cli": "^0.1.19",
     "@playwright/test": "^1.62.1",
     "@types/node": "^26.4.1",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "typescript": "^7.0.2"
   }
 }
