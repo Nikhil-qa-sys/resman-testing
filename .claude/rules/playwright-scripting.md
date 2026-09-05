@@ -297,23 +297,25 @@ page.locator('section').first()
 ### Assertions Live in the Spec File
 
 **Every `expect()` belongs in the spec file.** Page objects and components contain
-actions and locator getters only — never an assertion, not even a "stabilizing"
+actions and locator properties only — never an assertion, not even a "stabilizing"
 one. A reader must be able to open the spec and see everything the test verifies
 without following a call into `playwright-utils/`.
 
-To assert against an element a page object owns, expose it as a **locator getter
-method** and assert on it from the spec. See
+To assert against an element a page object owns, expose it as a **`public readonly`
+locator property** and assert on it from the spec. Assertions auto-wait on a stored
+locator exactly as they do on an inline one — a `Locator` is a lazy descriptor, and
+it re-resolves against the live DOM on every poll. See
 [Page Object Conventions](./playwright-architecture.md#page-object-conventions).
 
 ```typescript
-// GOOD: the page object acts, the spec verifies
+// GOOD: the page object acts and exposes, the spec verifies
 await boardRoomPage.selectProperty(testData.property)
-await expect(boardRoomPage.propertySelector()).toHaveValue(testData.property)
+await expect(boardRoomPage.propertySelector).toHaveValue(testData.property)
 
 // BAD: assertion hidden inside the page object
 async selectProperty(propertyName: string) {
   // ...
-  await expect(this.propertySelector()).toHaveValue(propertyName)  // belongs in the spec
+  await expect(this.propertySelector).toHaveValue(propertyName)  // belongs in the spec
 }
 ```
 
@@ -561,12 +563,12 @@ test('QA-01 | User can create a new building for the selected property', async (
 
   await test.step('Log in to ResMan', async () => {
     await loginPage.signIn(process.env.TEST_USERNAME!, process.env.TEST_PASSWORD!)
-    await expect(sideNavComponent.menu()).toBeVisible()
+    await expect(sideNavComponent.menu).toBeVisible()
   })
 
   await test.step(`Select the "${testData['QA-01'].property}" property on the BoardRoom`, async () => {
     await boardRoomPage.selectProperty(testData['QA-01'].property)
-    await expect(boardRoomPage.propertySelector()).toHaveValue(testData['QA-01'].property)
+    await expect(boardRoomPage.propertySelector).toHaveValue(testData['QA-01'].property)
   })
 
   await test.step('Navigate to Property > Buildings', async () => {
@@ -585,7 +587,7 @@ test('QA-01 | User can create a new building', async ({ page }) => {
 // BAD: assertions pooled in a trailing step instead of verifying each phase
 await test.step('Log in', async () => { await loginPage.signIn(...) })
 await test.step('Verify everything', async () => {
-  await expect(sideNavComponent.menu()).toBeVisible()
+  await expect(sideNavComponent.menu).toBeVisible()
   await expect(page).toHaveURL(/#\/Buildings$/)
 })
 ```
@@ -610,7 +612,7 @@ test('QA-02 | User can log in with valid credentials', async ({ page }) => {
   await test.step('Log in with valid credentials', async () => {
     await loginPage.signIn('user@example.com', 'Password123!')
     await expect(page).toHaveURL('/dashboard')
-    await expect(dashboardPage.accountMenu()).toBeVisible()
+    await expect(dashboardPage.accountMenu).toBeVisible()
   })
 })
 
@@ -655,8 +657,9 @@ const authorAvatar = page.locator('main header [class*="rounded-full"]')
 ```
 
 In a spec that drives page objects, this rule rarely applies: the locators the
-spec asserts on come from the page object's getter methods, so the spec calls
-`newBuildingPage.buildingsAddedMessage(1)` rather than re-declaring the locator.
+spec asserts on are the page object's own properties, so the spec writes
+`newBuildingPage.saveButton` — or, for a locator parametrized by runtime data,
+`newBuildingPage.buildingsAddedMessage(1)` — rather than re-declaring the locator.
 Never rebuild a locator in the spec that a page object already exposes.
 
 ### No Hardcoded Environment Data

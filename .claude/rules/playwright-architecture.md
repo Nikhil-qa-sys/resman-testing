@@ -18,10 +18,12 @@ paths: [tests/**,playwright-utils/**,playwright.config.ts]
 - One TypeScript class per page or major component
 - File name: kebab-case (`login-page.ts`, `course-detail-page.ts`)
 - Class name: PascalCase + `Page` (or component-appropriate) suffix (`LoginPage`, `HeaderComponent`)
-- Constructor takes `Page` only — **no locator properties, no eager locator construction**
-- **Locators inline in methods** — locators are self-descriptive and lazy; duplicating across methods is fine
+- **Locators are `public readonly` properties assigned in the constructor** — declare each one on the class, build it in the constructor body, and name it after the element (`nameInput`, `menu`, `showAllPagerLink`). `page.locator(...)` builds a descriptor and never touches the DOM, so constructing eagerly costs nothing and resolution still happens at use time
+- **No inline locators in methods** — a method uses the properties, it never builds a selector. `await this.nameInput.fill(name)`, never `await this.page.locator('input[name$=".Name"]').fill(name)`. One definition per element means one place to fix when the DOM moves
+- **The spec asserts on the properties directly** — `await expect(loginPage.errorMessage).toHaveText(...)`. Property access, no call parentheses, and the assertion auto-waits exactly as it would on an inline locator
 - **No assertions** — a page object never contains `expect()`. Every assertion lives in the spec file (see [Assertions Live in the Spec File](./playwright-scripting.md#assertions-live-in-the-spec-file))
-- **Locator getter methods** — to let the spec assert on an element the page owns, expose it as a method returning a `Locator`. The locator is still built lazily inside a method, so this is not a locator property. Name it after the element (`propertySelector()`, `menu()`), parametrize when the accessible name varies (`buildingsAddedMessage(count)`), and never prefix it with `expect`
+- **Locators parametrized by runtime data stay methods** — when the selector depends on a value known only during the run (`buildingRow(name)`, `buildingsAddedMessage(count)`) there is nothing to build at construction time. Derive it from a stored property rather than a raw selector string, and never prefix the method with `expect`
+- **Compose from the stored parent, except inside `filter({ has })`** — a `has` locator's selector chain is applied *relative to the outer element*, so it must be rooted at `page`. `rows.filter({ has: this.table.getByRole('link', { name }) })` looks for the table *inside* a row and silently matches nothing
 - **No tiny methods** — an action method covers a meaningful user task with multiple steps; never a single click or fill. Navigation between two pages is the exception: it is one click by nature and marks a page boundary
 - **Strict page boundaries** — a method only interacts with its own page; navigation marks the end of one method and the start of another on the next page
 - **Guards use `waitFor`, not `expect`** — actions (`click`, `fill`, `check`) auto-wait, so most methods need no guard at all. Before non-auto-waiting code (`textContent`, `count`, `all`, `inputValue`, `allTextContents`), gate with `await locator.waitFor(...)`. Confirming the outcome is the spec's job, in the `test.step()` that called the method
@@ -33,17 +35,23 @@ paths: [tests/**,playwright-utils/**,playwright.config.ts]
 import { type Locator, type Page } from '@playwright/test'
 
 export class LoginPage {
-  constructor(private page: Page) {}
+  public readonly emailInput: Locator
+  public readonly passwordInput: Locator
+  public readonly loginButton: Locator
+  // Exposed so the spec can assert on it without reaching into the DOM itself
+  public readonly errorMessage: Locator
 
-  // Locator getter — lets the spec assert without reaching into the DOM itself
-  errorMessage(): Locator {
-    return this.page.getByRole('alert')
+  constructor(private page: Page) {
+    this.emailInput = this.page.getByRole('textbox', { name: 'Email' })
+    this.passwordInput = this.page.getByLabel('Password')
+    this.loginButton = this.page.getByRole('button', { name: 'Login', exact: true })
+    this.errorMessage = this.page.getByRole('alert')
   }
 
   async loginWithCredentials(email: string, password: string) {
-    await this.page.getByRole('textbox', { name: 'Email' }).fill(email)
-    await this.page.getByLabel('Password').fill(password)
-    await this.page.getByRole('button', { name: 'Login', exact: true }).click()
+    await this.emailInput.fill(email)
+    await this.passwordInput.fill(password)
+    await this.loginButton.click()
   }
 }
 ```
@@ -70,7 +78,7 @@ test(`${TEST_CASE_ID} | User sees error for invalid password`, async ({ page }) 
 
   await test.step('Submit an invalid password', async () => {
     await loginPage.loginWithCredentials('user@example.com', 'wrong-password')
-    await expect(loginPage.errorMessage()).toHaveText('Invalid email or password')
+    await expect(loginPage.errorMessage).toHaveText('Invalid email or password')
   })
 })
 ```
@@ -81,14 +89,16 @@ For widgets reused across pages (header, cart drawer, modals), create a separate
 
 ```typescript
 export class HeaderComponent {
-  constructor(private page: Page) {}
+  public readonly cartBadge: Locator
+  public readonly loginLink: Locator
 
-  cartBadge(): Locator {
-    return this.page.getByRole('navigation').getByTestId('cart-count-badge')
+  constructor(private page: Page) {
+    this.cartBadge = this.page.getByRole('navigation').getByTestId('cart-count-badge')
+    this.loginLink = this.page.getByRole('link', { name: 'Log In' })
   }
 
   async openLogin() {
-    await this.page.getByRole('link', { name: 'Log In' }).click()
+    await this.loginLink.click()
   }
 }
 ```
@@ -114,12 +124,12 @@ test(`${TEST_CASE_ID} | User can select a property and open its accounts`, async
 
   await test.step('Log in', async () => {
     await loginPage.login(process.env.TEST_USERNAME!, process.env.TEST_PASSWORD!)
-    await expect(dashboardPage.propertySelector()).toBeVisible()
+    await expect(dashboardPage.propertySelector).toBeVisible()
   })
 
   await test.step(`Open accounts for "${testData['QA-05'].property}"`, async () => {
     await dashboardPage.selectProperty(testData['QA-05'].property)
-    await expect(accountsPage.accountsList()).toBeVisible()
+    await expect(accountsPage.accountsList).toBeVisible()
   })
 })
 ```
@@ -373,14 +383,14 @@ test.describe('Guest Smoke', () => {
 
   test('QA-10 | Home page displays key sections', async () => {
     await test.step('Open the home page', async () => {
-      await expect(homePage.hero()).toBeVisible()
+      await expect(homePage.hero).toBeVisible()
     })
   })
 
   test('QA-11 | User can navigate to blog', async () => {
     await test.step('Open the blog from the home page', async () => {
       await homePage.openBlog()
-      await expect(blogPage.articlesList()).toBeVisible()
+      await expect(blogPage.articlesList).toBeVisible()
     })
   })
 })
@@ -388,9 +398,11 @@ test.describe('Guest Smoke', () => {
 
 ## Anti-Patterns
 
-- **Locator constants on the class** (constructor or properties, e.g. `this.submitButton = page.getByRole(...)`) — locators are built lazily inside methods. A getter method that *returns* a `Locator` is not a locator constant and is the sanctioned way to expose one to the spec
+- **Inline locators inside methods** (`await this.page.getByRole('button', { name: 'Save' }).click()`) — every element the class touches is a constructor-assigned property; the method uses it
+- **A zero-argument method that only returns a locator** (`menu()`, `propertySelector()`) — make it a `public readonly` property instead. Methods are for locators parametrized by runtime data
+- **A `filter({ has })` locator rooted at a stored parent** — the chain is applied relative to the outer element, so it matches nothing and fails as "element(s) not found" rather than as an error. Root `has` locators at `page`
 - **`expect()` anywhere in `playwright-utils/`** — assertions belong to the spec. A page object that imports `expect` is a bug
-- **`expect*`-prefixed page object methods** (`expectErrorMessage`, `expectAccountsListVisible`) — replace with a locator getter the spec asserts on
+- **`expect*`-prefixed page object methods** (`expectErrorMessage`, `expectAccountsListVisible`) — replace with a locator property the spec asserts on
 - **Single-action methods** (`clickLoginButton`, `fillEmail`) — fold them into a multi-step flow. A cross-page navigation method is the one exception
 - **Methods spanning two pages** — every navigation marks a method boundary on a different page object
 - **Environment values hardcoded in a page object or spec** — they belong in the environment-keyed test data store

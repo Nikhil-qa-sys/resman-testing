@@ -6,6 +6,8 @@ import { BuildingsPage } from '../../playwright-utils/pages/buildings-page'
 import { NewBuildingPage } from '../../playwright-utils/pages/new-building-page'
 import { testData } from '../../playwright-utils/test-data/buildings.data'
 
+let buildingName = ''
+
 test.describe('Buildings', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
@@ -20,12 +22,12 @@ test.describe('Buildings', () => {
 
     await test.step('Log in to ResMan', async () => {
       await loginPage.signIn(process.env.TEST_USERNAME!, process.env.TEST_PASSWORD!)
-      await expect(sideNavComponent.menu()).toBeVisible()
+      await expect(sideNavComponent.menu).toBeVisible()
     })
 
     await test.step(`Select the "${testData['QA-01'].property}" property on the BoardRoom`, async () => {
       await boardRoomPage.selectProperty(testData['QA-01'].property)
-      await expect(boardRoomPage.propertySelector()).toHaveValue(testData['QA-01'].property)
+      await expect(boardRoomPage.propertySelector).toHaveValue(testData['QA-01'].property)
     })
 
     await test.step('Navigate to Property > Buildings', async () => {
@@ -33,11 +35,18 @@ test.describe('Buildings', () => {
       await expect(page).toHaveURL(/#\/Buildings$/)
     })
 
+
     await test.step('Create a new building', async () => {
       await buildingsPage.openNewBuildingForm()
       await expect(page).toHaveURL(/#\/Buildings\/New$/)
-      await newBuildingPage.addBuilding(testData['QA-01'].building)
+      buildingName = await newBuildingPage.addBuilding(testData['QA-01'].building)
       await expect(newBuildingPage.buildingsAddedMessage(1)).toBeVisible()
+    })
+
+    await test.step('Confirm the new building is listed for the property', async () => {
+      await sideNavComponent.openBuildings()
+      await buildingsPage.showAllBuildings()
+      await expect(buildingsPage.buildingRow(buildingName)).toBeVisible()
     })
   })
 })
