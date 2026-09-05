@@ -18,6 +18,12 @@ dotenv.config({ path: path.resolve(__dirname, `.env/.env.${environment}`), overr
  */
 export default defineConfig({
   testDir: './tests',
+  /* ResMan boots slowly: the qa app shell takes ~60s to render after sign-in,
+     and the BoardRoom's #Loading overlay swallows clicks until it clears. The
+     defaults (30s test / 5s expect) are raised here so no test needs a custom
+     timeout of its own. */
+  timeout: 180_000,
+  expect: { timeout: 90_000 },
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -35,6 +41,9 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+
+    /* Matches the slow shell/overlay boot described above. */
+    actionTimeout: 90_000,
   },
 
   /* Configure projects for major browsers */
