@@ -5,25 +5,56 @@ export class BoardRoomPage {
   // input has no accessible name and its "Property" caption is not a <label for>.
   public readonly propertySelector: Locator
   // The briefing overlay intercepts pointer events; its close control is an
-  // empty span with no text, role, or accessible name.
+  // empty span with no text, role, or accessible name. Both are always in the DOM,
+  // so presence proves nothing — the overlay renders on some sessions only, and
+  // visibility is what says whether it is there this run.
+  public readonly advisorOverlay: Locator
   public readonly closeAdvisorButton: Locator
+  // Applying a property reloads the BoardRoom behind this full-page overlay, which
+  // swallows clicks anywhere in the shell — including the side nav — until it clears.
+  public readonly loadingOverlay: Locator
   public readonly propertySuggestions: Locator
   public readonly goButton: Locator
 
   constructor(private page: Page) {
     this.propertySelector = this.page.locator('#PropertyOrGroupIDInput')
+    this.advisorOverlay = this.page.locator('#Advisor')
     this.closeAdvisorButton = this.page.locator('#CloseAdvisor')
+    this.loadingOverlay = this.page.locator('#Loading')
     this.propertySuggestions = this.page.getByRole('menuitem')
     this.goButton = this.page.getByText('Go', { exact: true })
   }
 
   async selectProperty(propertyName: string) {
-    await this.closeAdvisorButton.click()
+    await this.dismissBriefingIfShown()
     await this.propertySelector.fill('')
     // fill() sets the value without keystrokes, which never opens the suggestions.
     await this.propertySelector.pressSequentially(propertyName)
     await this.propertySuggestions.filter({ hasText: propertyName }).click()
     // The property reaches the rest of the app only once "Go" is applied.
     await this.goButton.click()
+    // "Go" raises the loading overlay; the caller's next click is on another page
+    // object, so this method does not return until the shell is usable again.
+    await this.loadingOverlay.waitFor({ state: 'hidden' })
+  }
+
+  // The briefing shows on some sessions and not others, so an unconditional click
+  // fails the run where it never appeared, and an immediate visibility check fails
+  // the run where it appears a moment later — both were observed on qa. It renders
+  // only after the shell has loaded, so the overlay clearing is the gate, and the
+  // briefing is then given a bounded chance to draw itself.
+  //
+  // The timeout is the one in this suite: measured over five runs, the briefing
+  // appears 2.4-6.6s after the overlay clears (qa, rc, regression), so 30s is roughly
+  // five times the slowest observed. Only a session that never shows a briefing waits
+  // it out, and it pays that once instead of failing on the action timeout.
+  private async dismissBriefingIfShown() {
+    await this.loadingOverlay.waitFor({ state: 'hidden' })
+    await this.advisorOverlay.waitFor({ state: 'visible', timeout: 30_000 }).catch(() => {})
+
+    if (await this.advisorOverlay.isVisible()) {
+      await this.closeAdvisorButton.click()
+      await this.advisorOverlay.waitFor({ state: 'hidden' })
+    }
   }
 }
