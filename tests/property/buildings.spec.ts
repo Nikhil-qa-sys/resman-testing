@@ -6,7 +6,7 @@ import { BuildingsPage } from '../../playwright-utils/pages/property/building/bu
 import { NewBuildingPage } from '../../playwright-utils/pages/property/building/new-building-page'
 import { testData } from '../../playwright-utils/test-data/buildings.data'
 
-let buildingName = ''
+let buildingName : string;
 
 test.describe('Buildings', () => {
   test.beforeEach(async ({ page }) => {
