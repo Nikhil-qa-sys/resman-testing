@@ -93,7 +93,14 @@ The CLI returns a locator like `getByRole('button', { name: 'Submit' })`. Collec
 
 **The CLI is a starting point, not the final answer.** Validate each generated locator against the priority defined in `.claude/rules/playwright-scripting.md`:
 
-`getByRole` > `getByLabel` > `getByText` > `getByPlaceholder` > `getByTestId` > CSS selector
+`getByRole` > `getByLabel` > `getByText` > `getByPlaceholder` > `getByTestId` > CSS selector > XPath
+
+The last rung is real: where the ladder above cannot produce a locator that reliably
+resolves the right element, a stable XPath anchored on text, an authored attribute or
+a relationship CSS cannot express beats a fragile `getBy*`. Read the XPath section of
+the scripting rules before writing one — absolute paths, positional indices and
+styling classes are still banned, and it has to carry a comment saying which rungs
+you tried.
 
 If `generate-locator` returns a fragile selector (a CSS path or class-based locator), inspect the snapshot to see if a more semantic alternative is available — the snapshot includes role and accessible name information you can use to construct a better locator manually.
 

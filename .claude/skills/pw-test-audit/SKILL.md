@@ -79,7 +79,8 @@ If the app is unreachable in this session, say so in the report and mark the aff
 Walk every changed line against the checklists below. Flag each violation with `file:line` and cite the rule.
 
 #### Locators
-- Priority order followed: `getByRole` > `getByLabel` > `getByText` > `getByPlaceholder` > `getByTestId` > CSS (structural tags and authored attributes only)
+- Priority order followed: `getByRole` > `getByLabel` > `getByText` > `getByPlaceholder` > `getByTestId` > CSS (structural tags and authored attributes only) > XPath
+- An XPath is a finding only when it was reachable another way, or when it is unstable in itself (absolute path, positional index standing in for identity, styling class, generated id). One anchored on text, an authored attribute or a relationship CSS cannot express — and carrying the comment saying which rungs failed — is a legitimate choice, not a violation (scripting rules § XPath)
 - No styling class names, and no framework-generated ids (`#\:r3\:`, hashed CSS-module classes) — those are as unstable as classes
 - Existing app test ids are consumed as they ship; no invented ids, no renames — Mode B cannot add them
 - Every locator used with `click` / `fill` / `check` / `selectOption` resolves to exactly one element — verified by `count()` against the live app

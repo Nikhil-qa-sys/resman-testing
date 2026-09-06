@@ -63,7 +63,8 @@ Run it headed to watch the flow: `npx playwright test tests/scratch/inspect.spec
 - You **cannot** add `data-testid` — the source is not yours to edit. When no semantic locator is unique, fall back in this order:
   1. Scope to a semantic ancestor — `getByRole('navigation')`, `page.locator('header')`, `.filter({ hasText })`
   2. A stable non-styling attribute — `[name="email"]`, `[type="submit"]`, `[aria-label="Close"]`, or an `id` that is clearly authored rather than generated
-  3. `.nth()` / `.first()` as a last resort, with a comment stating why no better locator exists
+  3. A **stable XPath**, when the element is only reachable through a relationship CSS cannot express (see [XPath](#xpath-when-the-getby-ladder-cannot-reach-it) below)
+  4. `.nth()` / `.first()` as a last resort, with a comment stating why no better locator exists
 - Styling class names are still banned (`.bg-destructive`, `.text-4xl`). A framework-generated id (`#\:r3\:`, `#mui-4821`, hashed CSS-module classes) is just as unstable — treat it as a class name.
 - Delete probe files (and their screenshots) before committing. They are exploration, not tests.
 
@@ -78,7 +79,8 @@ If you can neither read the source nor reach a running app, **stop and tell the 
 3. **`getByText`** — static text content, link text
 4. **`getByPlaceholder`** — when label is absent
 5. **`getByTestId`** — when semantic selectors can't produce a unique, reliable locator. In **Mode A**, when `data-testid` is needed but doesn't exist, **add it to the application component source code** rather than using a fragile alternative locator. In **Mode B**, use the test ids the app already ships; if none exist, drop to the Mode B fallback ladder above. Exhaust role, label, text, and placeholder options first — but **always prefer adding `data-testid` over using CSS selectors based on styling classes or structural paths**.
-6. **CSS selector** (`page.locator(...)`) — lowest priority. Acceptable **only** for stable HTML tags used as structural scoping (e.g., `header`, `nav`, `section`, `footer`). **Never use CSS class names** (`.font-bold`, `.grid > div`, `.text-4xl`) as locators — add a `data-testid` to the source code instead (Mode A), or scope to a semantic ancestor (Mode B).
+6. **CSS selector** (`page.locator(...)`) — low priority. Acceptable **only** for stable HTML tags used as structural scoping (e.g., `header`, `nav`, `section`, `footer`) and authored attributes. **Never use CSS class names** (`.font-bold`, `.grid > div`, `.text-4xl`) as locators — add a `data-testid` to the source code instead (Mode A), or scope to a semantic ancestor (Mode B).
+7. **XPath** (`page.locator('xpath=...')`) — the last rung, for the case where everything above is genuinely unreliable. See below for what makes one acceptable.
 
 ```typescript
 // GOOD: role-based (survives UI refactoring)
@@ -98,6 +100,57 @@ page.locator('header').getByRole('link', { name: 'Products' })
 page.locator('.bg-destructive')
 page.locator('div > form > input:first-child')
 ```
+
+### XPath — When the getBy Ladder Cannot Reach It
+
+The `getBy*` ladder is the default and stays the default. But a real application
+occasionally renders something none of it can pin down: a cell identified only by
+its position relative to a labelled header, a value that lives in the sibling of a
+node with no accessible name, an element whose only distinguishing feature is a
+relationship rather than an attribute. When that happens, a **stable XPath is a
+better answer than a fragile `getBy*`** — a locator that resolves the wrong element
+is worse than an ugly one that resolves the right element.
+
+Use it deliberately, not by habit. Before writing one, confirm the ladder actually
+fails: inspect the live DOM (Mode B) or the component (Mode A) and check that no
+role, label, text, placeholder, test id, authored attribute or ancestor scoping
+gives a unique match.
+
+A stable XPath is anchored on **meaning** — text, an authored attribute, a
+relationship the page guarantees:
+
+```typescript
+// GOOD: anchored on an authored attribute
+page.locator('xpath=//input[@name="Units.Number"]')
+
+// GOOD: a relationship CSS cannot express — the value cell beside a labelled one
+page.locator('xpath=//td[normalize-space()="Deposit"]/following-sibling::td[1]')
+
+// GOOD: anchored on text, scoped to the row that carries it
+page.locator('xpath=//tr[.//a[normalize-space()="rcBld123"]]//button[@title="Edit"]')
+
+// BAD: absolute path — one inserted wrapper and it breaks
+page.locator('xpath=/html/body/div[3]/div/div[2]/table/tbody/tr[4]/td[2]/input')
+
+// BAD: positional index standing in for identity
+page.locator('xpath=//div[5]/span[2]')
+
+// BAD: styling classes, exactly as banned in CSS
+page.locator('xpath=//div[@class="bg-destructive text-4xl"]')
+```
+
+Rules for one that earns its place:
+
+- **Never absolute.** A path from `/html/body` is broken by the next layout change
+- **No positional indices as identity** — `tr[4]`, `div[5]`. An index that selects
+  *within* a match anchored on meaning (`following-sibling::td[1]`) is fine
+- **No styling classes**, and no framework-generated ids — the CSS ban applies
+  unchanged; XPath does not launder an unstable hook
+- **Prefer `normalize-space()`** over `text()` for anything a human typed, so
+  whitespace changes do not break it
+- **It carries a comment** saying which rungs of the ladder were tried and why they
+  failed. Without that, the next reader cannot tell a considered choice from a lazy one
+- **It is still verified unique** against the live app, exactly like any other locator
 
 ### Common ARIA Roles for getByRole
 
