@@ -148,13 +148,22 @@ test(`${TEST_CASE_ID} | User can select a property and open its accounts`, async
 - **Instantiate at the top of the test body**, before the first action — one `const` per page the test uses
 - **Import only the pages the spec actually uses** — an unused page object in a spec is dead weight
 - **Never instantiate at module scope** — `page` is per-test, so a page object built outside the test body leaks state across tests
-- **Values captured during the run are declared above the `describe`, not the page objects** — a name a form generates (`buildingName`, `unitTypeName`) is produced in one step and consumed in a later one, so it is declared as a bare `let` at module scope and assigned inside the step that creates it. This is the one thing that lives outside the test body; it holds a string, not per-test browser state
+- **Values captured during the run are declared above the `describe`, not the page objects** — a name a form generates (`buildingName`, `unitTypeName`) is produced in one step and consumed in a later one, so it is declared as a `let` at module scope and assigned inside the step that creates it. This is the one thing that lives outside the test body; it holds a string, not per-test browser state
+- **Give it an empty-string initializer, never a bare type annotation.** These values are read back through a locator method, and Playwright drops an option that is `undefined`: `buildingRow(undefined)` builds `getByRole('link')` with no name filter, so a row that should not match matches anyway and the test passes for the wrong reason. `''` keeps the filter and fails loudly instead. The compiler will not choose for you — the assignment happens inside a `test.step()` callback, where definite-assignment analysis gives up
+
+```typescript
+// GOOD: an unassigned read still filters, so it fails
+let buildingName = ''
+
+// BAD: an unassigned read drops the filter and matches the first row it sees
+let buildingName: string
+```
 
 - When every test in a `describe` uses the same pages, declare the variables in the `describe` scope and assign them in `beforeEach` (see [Test Suite Hooks](#test-suite-hooks))
 
 ```typescript
-let buildingName: string
-let unitTypeName: string
+let buildingName = ''
+let unitTypeName = ''
 
 test.describe('Units', () => {
   test('QA-03 | User can create a new unit for the selected property', async ({ page }) => {

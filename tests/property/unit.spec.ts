@@ -10,8 +10,8 @@ import { UnitsPage } from '../../playwright-utils/pages/property/unit/units-page
 import { NewUnitPage } from '../../playwright-utils/pages/property/unit/new-unit-page'
 import { testData } from '../../playwright-utils/test-data/units.data'
 
-let buildingName : string;
-let unitTypeName : string;
+let buildingName = ''
+let unitTypeName = ''
 
 test.describe('Units', () => {
   test.beforeEach(async ({ page }) => {
