@@ -6,6 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Playwright + TypeScript end-to-end test project (`resman-testing`) that drives the ResMan web application. It is a test suite, not an application — there is no app source in this repo, so locators are written against the live DOM (Mode B in `.claude/rules/playwright-scripting.md`).
 
+## Conventions and skills
+
+How tests in this repo are written is defined in two rules files. Read both before
+writing or reviewing a test; they win over habit and over any skill's own wording:
+
+- `.claude/rules/playwright-scripting.md` — Mode B DOM discovery, locator priority
+  and uniqueness, inline-grid rows (`nth(index)`, never `.last()`), assertions in the
+  spec, waiting, test titles (`<CASE-ID> | behavior`), `test.step()` structure, naming
+- `.claude/rules/playwright-architecture.md` — page objects with constructor-assigned
+  `public readonly` locators and no `expect()`, page classes filed under
+  `playwright-utils/pages/<area>/`, save-confirmation and row-locator ownership,
+  environment-keyed test data, anti-patterns
+
+Two skills drive the workflow:
+
+- `pw-new-test-cli` — write a new test from user-supplied steps, exploring the live
+  app with `@playwright/cli` (there is no app source here)
+- `pw-test-audit` — audit the most recent test change against the rules with fresh eyes
+
 ## Commands
 
 ```bash

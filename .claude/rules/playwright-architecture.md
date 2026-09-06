@@ -22,6 +22,16 @@ paths: [tests/**,playwright-utils/**,playwright.config.ts]
 - **No inline locators in methods** — a method uses the properties, it never builds a selector. `await this.nameInput.fill(name)`, never `await this.page.locator('input[name$=".Name"]').fill(name)`. One definition per element means one place to fix when the DOM moves
 - **The spec asserts on the properties directly** — `await expect(loginPage.errorMessage).toHaveText(...)`. Property access, no call parentheses, and the assertion auto-waits exactly as it would on an inline locator
 - **No assertions** — a page object never contains `expect()`. Every assertion lives in the spec file (see [Assertions Live in the Spec File](./playwright-scripting.md#assertions-live-in-the-spec-file))
+- **A save confirmation belongs to the form that submitted it** — the banner a save
+  produces is exposed by the *create form's* page object, parametrized by the count
+  it reports: `newBuildingPage.buildingsAddedMessage(1)`,
+  `newUnitTypePage.unitTypesAddedMessage(1)`, `newUnitPage.unitsAddedMessage(2)`.
+  This holds whether the app keeps the form on screen or returns to the list — the
+  banner reports the outcome of *that submit*, so it is named and owned by the form
+  regardless of which route renders it. The list page owns what the list shows: a
+  row locator identified by the value the module lists on — `buildingRow(name)`
+  keyed by building name, `unitRow(number)` by unit number. Same shape everywhere:
+  the form owns `<thing>AddedMessage(count)`, the list owns `<thing>Row(identifier)`
 - **Locators parametrized by runtime data stay methods** — when the selector depends on a value known only during the run (`buildingRow(name)`, `buildingsAddedMessage(count)`) there is nothing to build at construction time. Derive it from a stored property rather than a raw selector string, and never prefix the method with `expect`
 - **Compose from the stored parent, except inside `filter({ has })`** — a `has` locator's selector chain is applied *relative to the outer element*, so it must be rooted at `page`. `rows.filter({ has: this.table.getByRole('link', { name }) })` looks for the table *inside* a row and silently matches nothing
 - **No tiny methods** — an action method covers a meaningful user task with multiple steps; never a single click or fill. Navigation between two pages is the exception: it is one click by nature and marks a page boundary
@@ -138,9 +148,33 @@ test(`${TEST_CASE_ID} | User can select a property and open its accounts`, async
 - **Instantiate at the top of the test body**, before the first action — one `const` per page the test uses
 - **Import only the pages the spec actually uses** — an unused page object in a spec is dead weight
 - **Never instantiate at module scope** — `page` is per-test, so a page object built outside the test body leaks state across tests
+- **Values captured during the run are declared above the `describe`, not the page objects** — a name a form generates (`buildingName`, `unitTypeName`) is produced in one step and consumed in a later one, so it is declared as a bare `let` at module scope and assigned inside the step that creates it. This is the one thing that lives outside the test body; it holds a string, not per-test browser state
+
 - When every test in a `describe` uses the same pages, declare the variables in the `describe` scope and assign them in `beforeEach` (see [Test Suite Hooks](#test-suite-hooks))
 
-When adding a new page class: create `playwright-utils/pages/<page-name>.ts` and import it in the specs that need it. There is no central registration step.
+```typescript
+let buildingName: string
+let unitTypeName: string
+
+test.describe('Units', () => {
+  test('QA-03 | User can create a new unit for the selected property', async ({ page }) => {
+    const newBuildingPage = new NewBuildingPage(page)   // page objects stay in the body
+    // ...
+    buildingName = await newBuildingPage.addBuilding(testData['QA-03'].building)
+  })
+})
+```
+
+When adding a new page class: create `playwright-utils/pages/<area>/<page-name>.ts`
+and import it in the specs that need it. There is no central registration step.
+
+**Page objects are grouped by domain area, never left flat.** `pages/` holds
+folders, not classes: `auth/`, `boardroom/`, `navigation/` for components shared
+across modules, and `property/<module>/` for the application's own modules — one
+folder per module (`property/building/`, `property/unit-type/`, `property/unit/`),
+holding that module's list page and its create form. A new module means a new
+folder; a page that belongs to no existing area gets one of its own rather than a
+home at the root.
 
 ## Auth Setup with storageState
 
@@ -221,12 +255,23 @@ tests/
     blog.spec.ts
 
 playwright-utils/
-  pages/
-    home-page.ts
-    login-page.ts
-    dashboard-page.ts
-    admin-page.ts
-    accounts-page.ts
+  pages/                     # One folder per domain area — never a flat pile of classes
+    auth/
+      login-page.ts
+    boardroom/
+      board-room-page.ts
+    navigation/
+      side-nav-component.ts  # Components shared across modules
+    property/                # One sub-folder per module under the area
+      building/
+        buildings-page.ts    # The module's list page
+        new-building-page.ts # The module's create form
+      unit-type/
+        unit-types-page.ts
+        new-unit-type-page.ts
+      unit/
+        units-page.ts
+        new-unit-page.ts
   fixtures/                  # Only for resources needing setup/teardown (DB, API clients)
   test-data/                 # Data only — no functions, no types, no barrel file
     buildings.data.ts        # Buildings cases for qa / rc / regression

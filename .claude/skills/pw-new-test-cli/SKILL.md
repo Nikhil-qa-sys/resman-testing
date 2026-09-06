@@ -29,9 +29,19 @@ npm install --save-dev @playwright/cli@latest
 
 ## Instructions
 
-### 1. Review existing test suite
+### 1. Review the project rules and the existing test suite
 
-Read all existing spec files in `tests/` to understand:
+Read both rules files **in full** before writing a single locator — they are the
+project's conventions, and they win over anything in this skill:
+
+- `.claude/rules/playwright-scripting.md` — DOM discovery mode, locator priority
+  and uniqueness, inline-grid rows, assertions, waiting, test structure, naming,
+  code style
+- `.claude/rules/playwright-architecture.md` — page object conventions, where a new
+  page class goes under `pages/<area>/`, run-time capture variables, save-confirmation
+  and row-locator ownership, environment-keyed test data, anti-patterns
+
+Then read all existing spec files in `tests/` to understand:
 - What is already covered (avoid duplicating tests)
 - Which `test.describe` block and file the new test belongs in
 - The conventions used (naming, grouping, beforeEach patterns)
@@ -97,7 +107,12 @@ npx playwright-cli close
 
 - Place the test in the correct file and `test.describe` block based on the existing structure
 - Every test starts from the home page (`/`) — never navigate directly to inner pages. Use UI interactions (clicking links, buttons) to reach the target page
-- Follow all conventions from the Playwright rules (locator priority, assertion types, waiting patterns, naming, constant usage)
+- Follow every convention in `.claude/rules/playwright-scripting.md` and
+  `.claude/rules/playwright-architecture.md` — locator priority, assertion placement,
+  waiting, naming, constant usage, page object shape, and where the new files go
+- Put new page objects under `playwright-utils/pages/<area>/`, matching the existing
+  domain folders (`auth/`, `boardroom/`, `navigation/`, `property/<module>/`) — never
+  at the root of `pages/`
 - **Do NOT modify application source code.** Since you do not have source access, you cannot add `data-testid` attributes. If no reliable user-visible locator exists for an element, use the most stable alternative the CLI revealed (an existing testid, a scoped role, or a structural CSS selector on a stable HTML tag). If you are forced to use a fragile locator, flag it explicitly to the user so they can request a `data-testid` from the application owner.
 - **No custom timeouts** — do not add `test.setTimeout()`, `{ timeout: ... }` on assertions, or `waitForURL` timeouts. Always use the default timeouts from `playwright.config.ts`. Custom timeouts are only allowed as a fix during debugging (step 6) when the test fails because the default timeout was genuinely insufficient.
 - Each test should verify one logical user flow
@@ -216,10 +231,24 @@ After the test passes (whether on the first attempt or after debugging), use the
 
 - Question: "Test passed. Does it meet your expectations?"
 - Header: "Finalize"
-- Option 1: label "Looks good", description "Remove comments and finalize the test"
+- Option 1: label "Looks good", description "Tidy the comments and finalize the test"
 - Option 2: label "Needs changes", description "Tell me what should be adjusted"
 
-If the user selects **"Looks good"**: remove all inline comments (`// ...`) from the test code, keeping only the executable test lines. Do not remove `test.describe` labels, test titles, or any code — only `//` comment lines. Also collapse any blank lines between lines of code inside the test body so the test reads compactly. Preserve a single blank line only between top-level blocks (e.g., between `test.describe` and `test`, or between sibling `test` blocks). Then proceed to step 8.
+If the user selects **"Looks good"**: tidy the comments and leave the formatting
+matching the specs already in `tests/`.
+
+- Remove comments that **narrate** what a line does (`// click the save button`,
+  `// assert the banner`) — the code says that already
+- **Keep** comments that explain a non-obvious *why*: a Mode B locator choice, an
+  application constraint, a wait that exists for a reason. In a spec these are rare;
+  in a page object they are the reason the next reader trusts the locator. Never
+  strip a page object's comments as part of finalizing
+- **Keep one blank line between `test.step()` blocks**, matching the existing specs —
+  a step is a phase of the journey and reads as its own paragraph. Do not compact the
+  test body into a solid block
+- Never remove `test.describe` labels, test titles, or any code
+
+Then proceed to step 8.
 
 If the user selects **"Needs changes"** or provides custom input: apply their instructions, re-run the test, and repeat from step 5.
 

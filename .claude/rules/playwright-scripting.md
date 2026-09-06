@@ -168,6 +168,37 @@ const articles = await page.getByRole('article').all()
 await expect(articles).toHaveCount(3)
 ```
 
+### Rows an Inline Grid Appends — Address by Index, Never `.last()`
+
+An editable grid whose "Add" button appends a row (the New Building, New Unit Type
+and New Unit forms) appends it **asynchronously** — the toolbar disables while the
+grid works, and the row lands some time after the click resolves. A locator ending
+in `.last()` resolves against whatever is on the page at that moment, which is the
+*previous* row, so the fills land in the row before and silently overwrite it. The
+failure surfaces much later and looks nothing like its cause: a doubled autocomplete
+value, then a timeout on a suggestion that never matches.
+
+Address the row this iteration owns by its index instead. Until the grid appends
+row `n`, `.nth(n)` matches nothing and the action keeps polling — the wait comes
+free from the locator, with no explicit guard.
+
+```typescript
+// BAD: .last() is the previous row until the new one is appended
+await this.addButton.click()
+await this.numberInputs.last().fill(number)
+
+// GOOD: nth(index) waits for the row this iteration owns
+for (let index = 0; index < unitCount; index++) {
+  await this.addButton.click()
+  await this.numberInputs.nth(index).fill(number)
+  await this.floorInputs.nth(index).fill(unit.floor)
+}
+```
+
+This is why every grid field on such a form is stored as a **plural** locator
+matching one element per row (`numberInputs`, `floorInputs`) — the class holds the
+column, and the method picks the row.
+
 ### Scoping to Containers (Avoiding False Positives)
 
 When a page has repeated UI patterns (pricing cards, product rows, list items), **always scope interactions and assertions to the specific container** — never rely on `.first()` or unscoped locators that could accidentally match an element from a different section.
