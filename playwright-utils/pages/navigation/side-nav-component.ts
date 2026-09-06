@@ -11,6 +11,7 @@ export class SideNavComponent {
   public readonly propertyMenuLink: Locator
   public readonly buildingsLink: Locator
   public readonly unitTypesLink: Locator
+  public readonly unitsLink: Locator
 
   constructor(private page: Page) {
     this.menu = this.page.getByRole('navigation').filter({ has: this.page.locator('#SideNavCollapse') })
@@ -20,6 +21,10 @@ export class SideNavComponent {
     // the side nav, which keeps it clear of the Unit Types module's own sub-menu
     // link of the same name.
     this.unitTypesLink = this.menu.getByRole('link', { name: 'Unit Types', exact: true })
+    // Exact and side-nav scoped for the same two reasons as Unit Types above: it
+    // keeps "Units" clear of "Unit Types", and of the Units module's own sub-menu
+    // link of the same name, which sits outside this nav.
+    this.unitsLink = this.menu.getByRole('link', { name: 'Units', exact: true })
   }
 
   async openBuildings() {
@@ -30,5 +35,10 @@ export class SideNavComponent {
   async openUnitTypes() {
     await this.propertyMenuLink.click()
     await this.unitTypesLink.click()
+  }
+
+  async openUnits() {
+    await this.propertyMenuLink.click()
+    await this.unitsLink.click()
   }
 }
