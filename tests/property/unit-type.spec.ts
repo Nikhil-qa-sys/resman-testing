@@ -41,8 +41,11 @@ test.describe('Unit Types', () => {
     })
 
     await test.step('Create a new unit type', async () => {
-      await newUnitTypePage.addUnitType(testData['QA-02'].unitType)
-      await expect(unitTypesPage.unitTypesAddedMessage(1)).toBeVisible()
+      const createdUnitTypeNames = await newUnitTypePage.addUnitTypes(
+        testData['QA-02'].unitType,
+        testData['QA-02'].unitTypeCount,
+      )
+      await expect(newUnitTypePage.unitTypesAddedMessage(createdUnitTypeNames.length)).toBeVisible()
     })
   })
 })

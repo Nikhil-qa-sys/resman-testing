@@ -39,8 +39,12 @@ test.describe('Buildings', () => {
     await test.step('Create a new building', async () => {
       await buildingsPage.openNewBuildingForm()
       await expect(page).toHaveURL(/#\/Buildings\/New$/)
-      buildingName = await newBuildingPage.addBuilding(testData['QA-01'].building)
-      await expect(newBuildingPage.buildingsAddedMessage(1)).toBeVisible()
+      const createdBuildingNames = await newBuildingPage.addBuildings(
+        testData['QA-01'].building,
+        testData['QA-01'].buildingCount,
+      )
+      buildingName = createdBuildingNames[0]
+      await expect(newBuildingPage.buildingsAddedMessage(createdBuildingNames.length)).toBeVisible()
     })
 
     await test.step('Confirm the new building is listed for the property', async () => {

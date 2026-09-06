@@ -15,6 +15,9 @@ const qaTestData = {
       province: 'TX',
       postalCode: '75201',
     },
+    // How many building rows the form is filled with. The confirmation banner counts
+    // the rows saved, so the test asserts this same number back.
+    buildingCount: 1,
   },
 }
 
@@ -31,6 +34,9 @@ const rcTestData: typeof qaTestData = {
       province: 'TX',
       postalCode: '75201',
     },
+    // How many building rows the form is filled with. The confirmation banner counts
+    // the rows saved, so the test asserts this same number back.
+    buildingCount: 1,
   },
 }
 
@@ -47,6 +53,9 @@ const regressionTestData: typeof qaTestData = {
       province: 'TX',
       postalCode: '75201',
     },
+    // How many building rows the form is filled with. The confirmation banner counts
+    // the rows saved, so the test asserts this same number back.
+    buildingCount: 1,
   },
 }
 

@@ -17,6 +17,7 @@ const qaTestData = {
       province: 'TX',
       postalCode: '73301',
     },
+    buildingCount: 1,
     unitType: {
       namePrefix: 'qaUT',
       description: 'QA automation unit type',
@@ -29,6 +30,7 @@ const qaTestData = {
       squareFootage: '950',
       maximumOccupancy: '4',
     },
+    unitTypeCount: 1,
     unit: {
       numberPrefix: 'qaU',
       floor: '1',
@@ -57,6 +59,7 @@ const rcTestData: typeof qaTestData = {
       province: 'TX',
       postalCode: '73301',
     },
+    buildingCount: 1,
     unitType: {
       namePrefix: 'rcUT',
       description: 'RC automation unit type',
@@ -69,6 +72,7 @@ const rcTestData: typeof qaTestData = {
       squareFootage: '950',
       maximumOccupancy: '4',
     },
+    unitTypeCount: 1,
     unit: {
       numberPrefix: 'rcU',
       floor: '1',
@@ -95,6 +99,7 @@ const regressionTestData: typeof qaTestData = {
       province: 'TX',
       postalCode: '73301',
     },
+    buildingCount: 1,
     unitType: {
       namePrefix: 'regUT',
       description: 'Regression automation unit type',
@@ -107,6 +112,7 @@ const regressionTestData: typeof qaTestData = {
       squareFootage: '950',
       maximumOccupancy: '4',
     },
+    unitTypeCount: 1,
     unit: {
       numberPrefix: 'regU',
       floor: '1',

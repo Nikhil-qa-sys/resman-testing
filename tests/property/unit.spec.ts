@@ -41,15 +41,23 @@ test.describe('Units', () => {
       await sideNavComponent.openBuildings()
       await buildingsPage.openNewBuildingForm()
       await expect(page).toHaveURL(/#\/Buildings\/New$/)
-      buildingName = await newBuildingPage.addBuilding(testData['QA-03'].building)
-      await expect(newBuildingPage.buildingsAddedMessage(1)).toBeVisible()
+      const createdBuildingNames = await newBuildingPage.addBuildings(
+        testData['QA-03'].building,
+        testData['QA-03'].buildingCount,
+      )
+      buildingName = createdBuildingNames[0]
+      await expect(newBuildingPage.buildingsAddedMessage(createdBuildingNames.length)).toBeVisible()
     })
     await test.step('Create the unit type the new unit will use', async () => {
       await sideNavComponent.openUnitTypes()
       await unitTypesPage.openNewUnitTypeForm()
       await expect(page).toHaveURL(/#\/UnitTypes\/New$/)
-      unitTypeName = await newUnitTypePage.addUnitType(testData['QA-03'].unitType)
-      await expect(unitTypesPage.unitTypesAddedMessage(1)).toBeVisible()
+      const createdUnitTypeNames = await newUnitTypePage.addUnitTypes(
+        testData['QA-03'].unitType,
+        testData['QA-03'].unitTypeCount,
+      )
+      unitTypeName = createdUnitTypeNames[0]
+      await expect(newUnitTypePage.unitTypesAddedMessage(createdUnitTypeNames.length)).toBeVisible()
     })
     await test.step('Navigate to Property > Units', async () => {
       await sideNavComponent.openUnits()

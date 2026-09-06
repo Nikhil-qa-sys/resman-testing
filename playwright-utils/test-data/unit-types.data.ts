@@ -18,6 +18,9 @@ const qaTestData = {
       squareFootage: '950',
       maximumOccupancy: '4',
     },
+    // How many unit type rows the form is filled with. The confirmation banner counts
+    // the rows saved, so the test asserts this same number back.
+    unitTypeCount: 1,
   },
 }
 
@@ -37,6 +40,9 @@ const rcTestData: typeof qaTestData = {
       squareFootage: '950',
       maximumOccupancy: '4',
     },
+    // How many unit type rows the form is filled with. The confirmation banner counts
+    // the rows saved, so the test asserts this same number back.
+    unitTypeCount: 1,
   },
 }
 
@@ -56,6 +62,9 @@ const regressionTestData: typeof qaTestData = {
       squareFootage: '950',
       maximumOccupancy: '4',
     },
+    // How many unit type rows the form is filled with. The confirmation banner counts
+    // the rows saved, so the test asserts this same number back.
+    unitTypeCount: 1,
   },
 }
 

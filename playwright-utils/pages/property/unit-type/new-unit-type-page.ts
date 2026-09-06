@@ -26,34 +26,36 @@ export class NewUnitTypePage {
   public readonly addButton: Locator
   public readonly saveButton: Locator
   // Inputs are named UnitTypes[<generated row guid>].<field>, so each field is
-  // reached through its stable name suffix rather than the generated id.
-  public readonly nameInput: Locator
-  public readonly descriptionInput: Locator
-  public readonly bedroomsInput: Locator
-  public readonly bathroomsInput: Locator
-  public readonly marketRentInput: Locator
-  public readonly requiredDepositInput: Locator
-  public readonly squareFootageInput: Locator
-  public readonly maximumOccupancyInput: Locator
+  // reached through its stable name suffix rather than the generated id. Each is
+  // plural and matches one element per grid row; methods pick the row by index
+  // (see the inline-grid rule in playwright-scripting.md).
+  public readonly nameInputs: Locator
+  public readonly descriptionInputs: Locator
+  public readonly bedroomsInputs: Locator
+  public readonly bathroomsInputs: Locator
+  public readonly marketRentInputs: Locator
+  public readonly requiredDepositInputs: Locator
+  public readonly squareFootageInputs: Locator
+  public readonly maximumOccupancyInputs: Locator
   // Both Category columns are autocompletes over a hidden <select>; the visible
   // input is the select's id with an "Input" suffix and carries no label.
-  public readonly rentCategoryInput: Locator
-  public readonly depositCategoryInput: Locator
+  public readonly rentCategoryInputs: Locator
+  public readonly depositCategoryInputs: Locator
 
   constructor(private page: Page) {
     this.propertySelector = this.page.locator('#PropertyName')
     this.addButton = this.page.getByRole('button', { name: 'Add' })
     this.saveButton = this.page.getByRole('button', { name: 'Save' })
-    this.nameInput = this.page.locator('input[name$=".Name"]')
-    this.descriptionInput = this.page.locator('input[name$=".Description"]')
-    this.bedroomsInput = this.page.locator('input[name$=".Bedrooms"]')
-    this.bathroomsInput = this.page.locator('input[name$=".Bathrooms"]')
-    this.marketRentInput = this.page.locator('input[name$=".MarketRent"]')
-    this.requiredDepositInput = this.page.locator('input[name$=".RequiredDeposit"]')
-    this.squareFootageInput = this.page.locator('input[name$=".SquareFootage"]')
-    this.maximumOccupancyInput = this.page.locator('input[name$=".MaximumOccupancy"]')
-    this.rentCategoryInput = this.page.locator('input[name$="RentLedgerItemTypeIDInput"]')
-    this.depositCategoryInput = this.page.locator('input[name$="DepositLedgerItemTypeIDInput"]')
+    this.nameInputs = this.page.locator('input[name$=".Name"]')
+    this.descriptionInputs = this.page.locator('input[name$=".Description"]')
+    this.bedroomsInputs = this.page.locator('input[name$=".Bedrooms"]')
+    this.bathroomsInputs = this.page.locator('input[name$=".Bathrooms"]')
+    this.marketRentInputs = this.page.locator('input[name$=".MarketRent"]')
+    this.requiredDepositInputs = this.page.locator('input[name$=".RequiredDeposit"]')
+    this.squareFootageInputs = this.page.locator('input[name$=".SquareFootage"]')
+    this.maximumOccupancyInputs = this.page.locator('input[name$=".MaximumOccupancy"]')
+    this.rentCategoryInputs = this.page.locator('input[name$="RentLedgerItemTypeIDInput"]')
+    this.depositCategoryInputs = this.page.locator('input[name$="DepositLedgerItemTypeIDInput"]')
   }
 
   // Parametrized by a category read from the data store. Only the open
@@ -65,26 +67,44 @@ export class NewUnitTypePage {
     return this.page.getByRole('menuitem', { name: category, exact: true })
   }
 
-  // Returns the name it created, so the caller can identify the new unit type.
-  async addUnitType(unitType: UnitTypeFormData): Promise<string> {
-    const name = `${unitType.namePrefix}${Math.random().toString(36).slice(2, 8)}`
+  // The banner reports the outcome of this form's submit, so it is owned here even
+  // though saving returns to the list and the banner renders there. Parametrized by
+  // the number of rows saved, so it cannot be a constructor property.
+  unitTypesAddedMessage(count: number): Locator {
+    return this.page.getByRole('cell', { name: `${count} unit type(s) added successfully!` })
+  }
 
-    // "Add" appends one inline editable row; the fills below auto-wait for that
-    // row's inputs to appear, so no explicit wait is needed between them.
-    await this.addButton.click()
-    await this.nameInput.fill(name)
-    await this.descriptionInput.fill(unitType.description)
-    await this.bedroomsInput.fill(unitType.bedrooms)
-    await this.bathroomsInput.fill(unitType.bathrooms)
-    await this.marketRentInput.fill(unitType.marketRent)
-    await this.chooseCategory(this.rentCategoryInput, unitType.rentCategory)
-    await this.requiredDepositInput.fill(unitType.requiredDeposit)
-    await this.chooseCategory(this.depositCategoryInput, unitType.depositCategory)
-    await this.squareFootageInput.fill(unitType.squareFootage)
-    await this.maximumOccupancyInput.fill(unitType.maximumOccupancy)
+  // Builds `unitTypeCount` rows and saves them in one submit, so the confirmation
+  // the caller asserts on counts exactly the rows filled here. Returns the names it
+  // created, so the caller can identify the new unit types.
+  async addUnitTypes(unitType: UnitTypeFormData, unitTypeCount: number): Promise<string[]> {
+    const unitTypeNames: string[] = []
+
+    for (let index = 0; index < unitTypeCount; index++) {
+      const name = `${unitType.namePrefix}${Math.random().toString(36).slice(2, 8)}`
+
+      // "Add" appends one inline editable row at the end of the grid, so this
+      // iteration owns row `index`. Addressing it by index is what makes the fill
+      // wait for the new row: until the grid appends it, nth(index) matches
+      // nothing and the action keeps polling rather than filling the row before.
+      await this.addButton.click()
+      await this.nameInputs.nth(index).fill(name)
+      await this.descriptionInputs.nth(index).fill(unitType.description)
+      await this.bedroomsInputs.nth(index).fill(unitType.bedrooms)
+      await this.bathroomsInputs.nth(index).fill(unitType.bathrooms)
+      await this.marketRentInputs.nth(index).fill(unitType.marketRent)
+      await this.chooseCategory(this.rentCategoryInputs.nth(index), unitType.rentCategory)
+      await this.requiredDepositInputs.nth(index).fill(unitType.requiredDeposit)
+      await this.chooseCategory(this.depositCategoryInputs.nth(index), unitType.depositCategory)
+      await this.squareFootageInputs.nth(index).fill(unitType.squareFootage)
+      await this.maximumOccupancyInputs.nth(index).fill(unitType.maximumOccupancy)
+
+      unitTypeNames.push(name)
+    }
+
     await this.saveButton.click()
 
-    return name
+    return unitTypeNames
   }
 
   // Private, and parametrized by the field it drives: the Rent and Deposit

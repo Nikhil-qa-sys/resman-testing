@@ -14,13 +14,6 @@ export class UnitTypesPage {
     this.newUnitTypeLink = this.page.getByRole('link', { name: 'New Unit Type', exact: true })
   }
 
-  // Saving the New Unit Type form returns here, so the confirmation banner is
-  // this page's, not the form's. Parametrized by the number of rows saved, so it
-  // cannot be a constructor property.
-  unitTypesAddedMessage(count: number): Locator {
-    return this.page.getByRole('cell', { name: `${count} unit type(s) added successfully!` })
-  }
-
   async openNewUnitTypeForm() {
     await this.newUnitTypeLink.click()
   }
