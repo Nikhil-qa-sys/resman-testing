@@ -10,8 +10,8 @@ export class BoardRoomPage {
   // visibility is what says whether it is there this run.
   public readonly advisorOverlay: Locator
   public readonly closeAdvisorButton: Locator
-  // Applying a property reloads the BoardRoom behind this full-page overlay, which
-  // swallows clicks anywhere in the shell — including the side nav — until it clears.
+  // The shell loads behind this full-page overlay, which swallows clicks anywhere
+  // in it — including the side nav — until it clears.
   public readonly loadingOverlay: Locator
   public readonly propertySuggestions: Locator
   public readonly goButton: Locator
@@ -31,11 +31,11 @@ export class BoardRoomPage {
     // fill() sets the value without keystrokes, which never opens the suggestions.
     await this.propertySelector.pressSequentially(propertyName)
     await this.propertySuggestions.filter({ hasText: propertyName }).click()
-    // The property reaches the rest of the app only once "Go" is applied.
+    // The property reaches the rest of the app only once "Go" is applied. Measured
+    // on qa and rc: applying it does not raise the loading overlay — that overlay
+    // belongs to the initial shell load, which is waited out below before anything
+    // is clicked — so there is nothing to wait for here.
     await this.goButton.click()
-    // "Go" raises the loading overlay; the caller's next click is on another page
-    // object, so this method does not return until the shell is usable again.
-    await this.loadingOverlay.waitFor({ state: 'hidden' })
   }
 
   // The briefing shows on some sessions and not others, so an unconditional click

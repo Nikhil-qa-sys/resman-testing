@@ -103,6 +103,7 @@ Walk every changed line against the checklists below. Flag each violation with `
 - Explicit waits appear only before non-auto-waiting calls (`all`, `count`, `textContent`, `inputValue`, `allTextContents`)
 - Guards inside page objects use `waitFor()`, never `expect()`
 - No custom timeouts anywhere in the diff — no `{ timeout: ... }`, no `test.setTimeout(...)`. A genuinely slow application is absorbed by raising `timeout` / `expect.timeout` / `actionTimeout` in `playwright.config.ts`, once, with the measurement recorded in a comment
+- The one sanctioned custom timeout is the bounded wait for **optional** UI (scripting rules § The one exception: UI that may never appear). Accept it only when every condition there holds — the element is genuinely optional, the bound is measured across environments and recorded in the comment, it is shorter than the default, it is paired with a visibility branch, and it sits in a page object. Otherwise it is a finding
 
 #### Test structure and data
 - Title reads `<CASE-ID> | <user behavior>`, with the id written as a literal — no module-level `TEST_CASE_ID` const

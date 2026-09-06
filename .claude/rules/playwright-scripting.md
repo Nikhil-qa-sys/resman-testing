@@ -487,6 +487,49 @@ await expect(page.getByRole('heading', { name: 'Success' })).toBeVisible({ timeo
 await expect(page.getByRole('heading', { name: 'Success' })).toBeVisible()
 ```
 
+#### The one exception: UI that may never appear
+
+Some UI is genuinely optional — it renders on some sessions and not others, and
+nothing in the DOM says in advance which run this is. The ResMan BoardRoom briefing
+is the case in this suite: its close control is always in the DOM, so presence
+proves nothing, and it draws a few seconds *after* the shell finishes loading, so an
+instant visibility check reads it as absent.
+
+Waiting for it with the default timeout fails the run where it never comes; not
+waiting fails the run where it comes late. Here — and only here — a **short, bounded
+wait** is correct, because the bound is deliberately *shorter* than the default, not
+longer:
+
+```typescript
+// Measured over five runs (qa, rc, regression): the briefing appears 2.4-6.6s after
+// the overlay clears, so 30s is ~5x the slowest observed.
+await this.advisorOverlay.waitFor({ state: 'visible', timeout: 30_000 }).catch(() => {})
+
+if (await this.advisorOverlay.isVisible()) {
+  await this.closeAdvisorButton.click()
+  await this.advisorOverlay.waitFor({ state: 'hidden' })
+}
+```
+
+Every one of these conditions must hold, or it is the anti-pattern above wearing a
+comment:
+
+- The element is **optional** — a run where it never appears is a normal run, not a
+  failure. UI that must appear is waited for with the default and nothing else
+- The bound is **measured**, across every environment the case runs on, and the
+  measurement is written in the comment beside it — a guessed number is not evidence
+- The bound is a **small multiple of the slowest observed** appearance, and shorter
+  than the configured default. A bound longer than the default is a config change,
+  not this
+- The wait is **paired with a visibility branch**. A bounded wait whose result is
+  never read is just a sleep
+- It lives in a **page object**, not a spec, and the swallowed rejection is the
+  timeout only — never a way to make a flaky step pass
+
+Before reaching for this, check that the element really is optional: measure it
+first, as above. Almost every "sometimes it's there" turns out to be a missing wait
+for something else, and this exception is not the place to park that.
+
 When the application itself is slow — a shell that takes a minute to boot, a
 loading overlay that swallows clicks — the fix is to **raise the defaults in
 `playwright.config.ts`**, not to sprinkle timeouts through the specs. Measure the
