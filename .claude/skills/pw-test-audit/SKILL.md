@@ -104,6 +104,7 @@ Walk every changed line against the checklists below. Flag each violation with `
 - Explicit waits appear only before non-auto-waiting calls (`all`, `count`, `textContent`, `inputValue`, `allTextContents`)
 - Guards inside page objects use `waitFor()`, never `expect()`
 - No custom timeouts anywhere in the diff — no `{ timeout: ... }`, no `test.setTimeout(...)`. A genuinely slow application is absorbed by raising `timeout` / `expect.timeout` / `actionTimeout` in `playwright.config.ts`, once, with the measurement recorded in a comment
+- A wait that takes its value from `TIMEOUTS` in `playwright-utils/timeouts/timeouts.ts` is not a finding — that file is the single place these numbers live. A bare numeric literal at a call site is, even when the number is reasonable: it belongs in `TIMEOUTS` under a name (scripting rules § Waits the config cannot express)
 - The one sanctioned custom timeout is the bounded wait for **optional** UI (scripting rules § The one exception: UI that may never appear). Accept it only when every condition there holds — the element is genuinely optional, the bound is measured across environments and recorded in the comment, it is shorter than the default, it is paired with a visibility branch, and it sits in a page object. Otherwise it is a finding
 
 #### Test structure and data

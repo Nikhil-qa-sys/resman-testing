@@ -540,6 +540,30 @@ await expect(page.getByRole('heading', { name: 'Success' })).toBeVisible({ timeo
 await expect(page.getByRole('heading', { name: 'Success' })).toBeVisible()
 ```
 
+#### Waits the config cannot express: `TIMEOUTS`
+
+The rule above is about *specs*, and it still holds: a spec never invents a number.
+What the config cannot express is a wait that differs per page — this application
+answers some clicks in under a second and others in minutes, behind the same overlay,
+and one global default cannot be right for both.
+
+Those numbers live in `playwright-utils/timeouts/timeouts.ts` and reach the code as
+names, never as literals:
+
+```typescript
+// GOOD: named, chosen per call, tunable in one place
+await waitForLoadingToFinish(page, TIMEOUTS.loader.slow)
+
+// BAD: the same number, invented at the call site
+await page.locator('#Loading').waitFor({ state: 'hidden', timeout: 300_000 })
+```
+
+The helper carries the default, so most callers pass nothing at all. Pass a name only
+where a route has been *measured* finishing late — not where it once hung, since
+patience does nothing for a stall except postpone the failure. See
+[Named Timeouts](./playwright-architecture.md#named-timeouts) for what belongs in
+that file.
+
 #### The one exception: UI that may never appear
 
 Some UI is genuinely optional — it renders on some sessions and not others, and

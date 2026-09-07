@@ -12,6 +12,7 @@ paths: [tests/**,playwright-utils/**,playwright.config.ts]
 | **Page Object** | A page or major component with multi-step user flows | `playwright-utils/pages/` |
 | **Custom Fixture** | Resources needing setup/teardown (auth, DB, API) | `playwright-utils/fixtures/` |
 | **Helper Function** | Stateless utility, no cleanup needed | `playwright-utils/helpers/` |
+| **Named timeout** | A wait that cannot use the configured default | `playwright-utils/timeouts/` |
 
 ## Page Object Conventions
 
@@ -286,6 +287,9 @@ playwright-utils/
     buildings.data.ts        # Buildings cases for qa / rc / regression
     accounts.data.ts         # Accounts cases for qa / rc / regression
   helpers/                   # Stateless utilities with no test data in them
+    loading-overlay.ts       # The app-wide #Loading overlay, waited on from anywhere
+  timeouts/                  # Every wait the suite cannot leave to the config default
+    timeouts.ts              # TIMEOUTS.loader.default / .slow / .appearance
 ```
 
 ## Environment-Specific Test Data
@@ -380,6 +384,41 @@ Rules for the store:
   `process.env.TEST_USERNAME` / `TEST_PASSWORD` — never in the data store
 - **Run `npm run typecheck`.** Playwright strips types without checking them, so a
   test run will not catch environment drift — only the type-check will
+
+## Named Timeouts
+
+`playwright.config.ts` still owns the defaults every ordinary step runs on. What it
+cannot express is a wait that differs *per page*: this application answers some
+clicks in under a second and others in minutes, behind the same overlay. Those
+numbers live in `playwright-utils/timeouts/timeouts.ts`, so tuning the suite as the
+application changes is one edit in one file.
+
+```typescript
+export const TIMEOUTS = {
+  loader: {
+    default: 120_000,     // a page that behaves
+    slow: 300_000,        // a route observed to crawl
+    appearance: 1_000,    // NOT patience — see below
+  },
+} as const
+```
+
+- **A named timeout is patience, not a target.** It is how long a step may take
+  before the suite calls it broken. It never encodes how long something *should*
+  take
+- **Callers pick per call, and only from measurement.** `TIMEOUTS.loader.slow` is
+  for a route seen finishing late — not for one that once hung. Slow patience buys
+  nothing against a stall; it only delays the failure and hides it behind five
+  minutes of waiting
+- **Not every number in the file is patience.** `appearance` bounds *optional* UI —
+  "did this click load anything at all?" — and is paid in full every time the overlay
+  is missed. Raising it to be safe is how a 70-page walk went from 76s to 355s. Keep
+  the two kinds separate, and say which is which in a comment
+- **A named timeout never replaces an assertion's default.** Specs still assert with
+  the configured `expect` timeout; these numbers belong to explicit `waitFor` calls
+  in helpers and page objects, and to the specs that call those helpers directly
+- **Keep the slow value under the test timeout.** A wait that outlives its test just
+  turns one clear failure into a confusing one
 
 ## Configuration Best Practices
 

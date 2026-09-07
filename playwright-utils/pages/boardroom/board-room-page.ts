@@ -1,4 +1,5 @@
 import { type Locator, type Page } from '@playwright/test'
+import { loadingOverlay, waitForShellToBeUsable } from '../../helpers/loading-overlay'
 
 export class BoardRoomPage {
   // Authored id on the jQuery UI autocomplete fronting a hidden <select>; the
@@ -10,8 +11,9 @@ export class BoardRoomPage {
   // visibility is what says whether it is there this run.
   public readonly advisorOverlay: Locator
   public readonly closeAdvisorButton: Locator
-  // The shell loads behind this full-page overlay, which swallows clicks anywhere
-  // in it — including the side nav — until it clears.
+  // The shell loads behind the application-wide overlay, which swallows clicks
+  // anywhere in it — including the side nav — until it clears. The selector lives in
+  // the loading-overlay helper, since every module raises the same one.
   public readonly loadingOverlay: Locator
   public readonly propertySuggestions: Locator
   public readonly goButton: Locator
@@ -20,7 +22,7 @@ export class BoardRoomPage {
     this.propertySelector = this.page.locator('#PropertyOrGroupIDInput')
     this.advisorOverlay = this.page.locator('#Advisor')
     this.closeAdvisorButton = this.page.locator('#CloseAdvisor')
-    this.loadingOverlay = this.page.locator('#Loading')
+    this.loadingOverlay = loadingOverlay(this.page)
     this.propertySuggestions = this.page.getByRole('menuitem')
     this.goButton = this.page.getByText('Go', { exact: true })
   }
@@ -49,7 +51,7 @@ export class BoardRoomPage {
   // five times the slowest observed. Only a session that never shows a briefing waits
   // it out, and it pays that once instead of failing on the action timeout.
   private async dismissBriefingIfShown() {
-    await this.loadingOverlay.waitFor({ state: 'hidden' })
+    await waitForShellToBeUsable(this.page)
     await this.advisorOverlay.waitFor({ state: 'visible', timeout: 30_000 }).catch(() => {})
 
     if (await this.advisorOverlay.isVisible()) {
