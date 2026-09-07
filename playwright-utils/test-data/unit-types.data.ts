@@ -22,6 +22,22 @@ const qaTestData = {
     // the rows saved, so the test asserts this same number back.
     unitTypeCount: 1,
   },
+  'QA-05': {
+    property: 'Beta Tree - Automation',
+    unitType: {
+      namePrefix: 'qaUT',
+      description: 'QA automation unit type',
+      bedrooms: '2',
+      bathrooms: '1',
+      marketRent: '1500',
+      rentCategory: 'Resident Rent',
+      requiredDeposit: '1200',
+      depositCategory: 'Security Deposit Paid',
+      squareFootage: '950',
+      maximumOccupancy: '4',
+    },
+    unitTypeCount: 1,
+  },
 }
 
 // RC environment test data
@@ -44,6 +60,22 @@ const rcTestData: typeof qaTestData = {
     // the rows saved, so the test asserts this same number back.
     unitTypeCount: 1,
   },
+  'QA-05': {
+    property: 'Beta Tree - Automation',
+    unitType: {
+      namePrefix: 'rcUT',
+      description: 'RC automation unit type',
+      bedrooms: '2',
+      bathrooms: '1',
+      marketRent: '1500',
+      rentCategory: 'Auto Rent Charge',
+      requiredDeposit: '1200',
+      depositCategory: 'Security Deposit',
+      squareFootage: '950',
+      maximumOccupancy: '4',
+    },
+    unitTypeCount: 1,
+  },
 }
 
 // Regression environment test data
@@ -64,6 +96,22 @@ const regressionTestData: typeof qaTestData = {
     },
     // How many unit type rows the form is filled with. The confirmation banner counts
     // the rows saved, so the test asserts this same number back.
+    unitTypeCount: 1,
+  },
+  'QA-05': {
+    property: 'Beta Tree - Automation',
+    unitType: {
+      namePrefix: 'regUT',
+      description: 'Regression automation unit type',
+      bedrooms: '2',
+      bathrooms: '1',
+      marketRent: '1500',
+      rentCategory: 'Accelerated Rent Charges',
+      requiredDeposit: '1200',
+      depositCategory: 'Security Deposit',
+      squareFootage: '950',
+      maximumOccupancy: '4',
+    },
     unitTypeCount: 1,
   },
 }
