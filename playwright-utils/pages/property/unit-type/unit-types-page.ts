@@ -1,5 +1,4 @@
 import { type Locator, type Page } from '@playwright/test'
-import { waitForLoadingToFinish } from '../../../helpers/loading-overlay'
 
 export class UnitTypesPage {
   // The module keeps its own property box, fed by the BoardRoom selection. It is
@@ -74,9 +73,15 @@ export class UnitTypesPage {
     return pageNumber
   }
 
-  // Navigation, so it ends here and the detail page takes over.
+  // Navigation, so it ends here and the detail page takes over. Waits on the request
+  // the click fires rather than on the overlay it also raises: the response is exact
+  // and costs what the request costs, where the overlay costs the appearance bound to
+  // discover the swap is already over.
   async openUnitType(name: string) {
+    const detailLoaded = this.page.waitForResponse(
+      (response) => response.url().includes('UnitTypes/Detail') && response.status() === 200,
+    )
     await this.unitTypeRow(name).getByRole('link', { name, exact: true }).click()
-    await waitForLoadingToFinish(this.page)
+    await detailLoaded
   }
 }

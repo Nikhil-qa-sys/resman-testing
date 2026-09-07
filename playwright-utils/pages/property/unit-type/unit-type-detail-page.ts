@@ -1,5 +1,4 @@
 import { type Locator, type Page } from '@playwright/test'
-import { waitForLoadingToFinish } from '../../../helpers/loading-overlay'
 
 export class UnitTypeDetailPage {
   // "Delete" under Actions, pinned to that section rather than to the page.
@@ -60,9 +59,15 @@ export class UnitTypeDetailPage {
   }
 
   // Confirming deletes the record and returns to the list, so this ends the detail
-  // page and the list page takes over.
+  // page and the list page takes over. The delete request is the signal: the overlay
+  // clears before the list has rendered, so waiting on it returns too early — the
+  // banner the caller asserts on is not there yet — and costs the appearance bound
+  // when the swap has already finished.
   async confirmDelete() {
+    const deleted = this.page.waitForResponse(
+      (response) => response.url().includes('UnitTypes/Delete') && response.status() === 200,
+    )
     await this.confirmDeleteYesButton.click()
-    await waitForLoadingToFinish(this.page)
+    await deleted
   }
 }
