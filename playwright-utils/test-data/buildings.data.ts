@@ -19,6 +19,19 @@ const qaTestData = {
     // the rows saved, so the test asserts this same number back.
     buildingCount: 1,
   },
+  'QA-04': {
+    property: 'Beta Tree - Automation',
+    building: {
+      namePrefix: 'qaBld',
+      floors: '4',
+      description: 'QA automation building',
+      streetAddress: '789 Playwright Blvd',
+      city: 'Dallas',
+      province: 'TX',
+      postalCode: '75201',
+    },
+    buildingCount: 1,
+  },
 }
 
 // RC environment test data
@@ -38,6 +51,19 @@ const rcTestData: typeof qaTestData = {
     // the rows saved, so the test asserts this same number back.
     buildingCount: 1,
   },
+  'QA-04': {
+    property: 'Beta Tree - Automation',
+    building: {
+      namePrefix: 'rcBld',
+      floors: '4',
+      description: 'RC automation building',
+      streetAddress: '789 Playwright Blvd',
+      city: 'Dallas',
+      province: 'TX',
+      postalCode: '75201',
+    },
+    buildingCount: 1,
+  },
 }
 
 // Regression environment test data
@@ -55,6 +81,19 @@ const regressionTestData: typeof qaTestData = {
     },
     // How many building rows the form is filled with. The confirmation banner counts
     // the rows saved, so the test asserts this same number back.
+    buildingCount: 1,
+  },
+  'QA-04': {
+    property: 'Beta Tree - Automation',
+    building: {
+      namePrefix: 'regBld',
+      floors: '4',
+      description: 'Regression automation building',
+      streetAddress: '789 Playwright Blvd',
+      city: 'Dallas',
+      province: 'TX',
+      postalCode: '75201',
+    },
     buildingCount: 1,
   },
 }

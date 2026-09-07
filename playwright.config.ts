@@ -21,8 +21,14 @@ export default defineConfig({
   /* ResMan boots slowly: the qa app shell takes ~60s to render after sign-in,
      and the BoardRoom's #Loading overlay swallows clicks until it clears. The
      defaults (30s test / 5s expect) are raised here so no test needs a custom
-     timeout of its own. */
-  timeout: 180_000,
+     timeout of its own.
+
+     180s was not enough once a case had to page through a list. QA-04 walks the
+     Buildings list to find the building it just created: 71 of 73 pages on rc at
+     roughly 1s each, measured at 174s end to end — and that list grows every time
+     the suite runs, since nothing is torn down. 300s keeps the same one-timeout
+     rule while leaving room for that growth. */
+  timeout: 300_000,
   expect: { timeout: 90_000 },
   /* Run tests in files in parallel */
   fullyParallel: true,
