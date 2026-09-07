@@ -513,6 +513,44 @@ await responsePromise
 await page.getByRole('dialog').waitFor({ state: 'hidden' })
 ```
 
+### Prefer an Observable Outcome to Patience
+
+A timeout says how long to tolerate not knowing. When the action has an outcome you
+can observe, wait for *that* instead: it is exact, it costs only what the work costs,
+and there is no number to retune when the application changes.
+
+Ranked by preference:
+
+1. **An auto-waiting assertion or action** — the outcome is the next step, so nothing
+   extra is written at all
+2. **The request the action fires** — `waitForResponse` on the endpoint, when the
+   result is a data swap with no visible marker of its own
+3. **A state change in the DOM** — `waitFor({ state: 'hidden' })` on the overlay a
+   click raises, when nothing better exists
+4. **A bounded wait** — only for UI that may never appear (see above)
+
+The difference is not academic. Paging a list used to wait on the loading overlay,
+which the swap outstripped: the overlay was never caught going up, so every page paid
+the appearance bound instead — 71s of a 76s walk, spent discovering there was nothing
+to wait for. Waiting on the request the pager fires took the same walk to 49s.
+
+```typescript
+// GOOD: the response is the signal, and it costs what the request costs
+const pageLoaded = page.waitForResponse(
+  (response) => response.url().includes('IndexPageBuildingList') && response.status() === 200,
+)
+await nextPageLink.click()
+await pageLoaded
+
+// WORSE: waits on a side effect that may already be over, and pays a bound to find out
+await nextPageLink.click()
+await waitForLoadingToFinish(page)
+```
+
+Reach for the overlay when the action has no observable outcome of its own — a module
+swap, a save that lands on a page you have not identified yet. Reach for the request
+when you know which one it is.
+
 ### Never Use Arbitrary Timeouts
 
 ```typescript

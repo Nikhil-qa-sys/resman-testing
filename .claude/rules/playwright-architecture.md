@@ -33,6 +33,26 @@ paths: [tests/**,playwright-utils/**,playwright.config.ts]
   row locator identified by the value the module lists on — `buildingRow(name)`
   keyed by building name, `unitRow(number)` by unit number. Same shape everywhere:
   the form owns `<thing>AddedMessage(count)`, the list owns `<thing>Row(identifier)`
+- **The count in a confirmation is asserted from what the form created, never as a
+  literal.** A method that fills `n` rows returns the `n` values it generated, and the
+  spec asserts `thingsAddedMessage(created.length)`. A hardcoded
+  `thingsAddedMessage(1)` passes whether the form saved the one row it was asked for
+  or silently saved one of three, and it goes stale the moment the count is driven
+  from data. The returned array is also what identifies the records afterwards
+
+```typescript
+// GOOD: the number asserted is the number of rows actually filled
+const createdBuildingNames = await newBuildingPage.addBuildings(
+  testData['QA-01'].building,
+  testData['QA-01'].buildingCount,
+)
+await expect(newBuildingPage.buildingsAddedMessage(createdBuildingNames.length)).toBeVisible()
+
+// BAD: a literal that cannot tell "saved one" from "saved one of three"
+await newBuildingPage.addBuildings(testData['QA-01'].building, testData['QA-01'].buildingCount)
+await expect(newBuildingPage.buildingsAddedMessage(1)).toBeVisible()
+```
+
 - **Locators parametrized by runtime data stay methods** — when the selector depends on a value known only during the run (`buildingRow(name)`, `buildingsAddedMessage(count)`) there is nothing to build at construction time. Derive it from a stored property rather than a raw selector string, and never prefix the method with `expect`
 - **Compose from the stored parent, except inside `filter({ has })`** — a `has` locator's selector chain is applied *relative to the outer element*, so it must be rooted at `page`. `rows.filter({ has: this.table.getByRole('link', { name }) })` looks for the table *inside* a row and silently matches nothing
 - **No tiny methods** — an action method covers a meaningful user task with multiple steps; never a single click or fill. Navigation between two pages is the exception: it is one click by nature and marks a page boundary

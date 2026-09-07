@@ -94,12 +94,14 @@ Walk every changed line against the checklists below. Flag each violation with `
 #### Assertions
 - Every `expect()` is in the spec file — **no `expect` import anywhere under `playwright-utils/`**
 - Locator (auto-retrying) assertions preferred over generic `expect(value).toBe(...)`
+- A confirmation count is asserted from what the form returned (`created.length`), not as a hardcoded literal — a literal cannot tell "saved the row asked for" from "saved one of three" (architecture rules § Page Object Conventions)
 - No `expect.soft(...)`
 - Negative assertions wait for the DOM mutation first (`waitForResponse`, `waitFor({ state: 'hidden' })`, or `toBeHidden`)
 - `toHaveText` / `toContainText` on a unique locator preferred over `getByText(...).toBeVisible()`
 
 #### Waiting
 - No `page.waitForTimeout(...)`
+- The wait matches the best signal available: an auto-waiting assertion first, then the request the action fires (`waitForResponse`), then a DOM state change, and a bounded wait last. Waiting on a side effect when the action has a known request is a finding — it costs a bound to discover the swap is already over (scripting rules § Prefer an Observable Outcome to Patience)
 - No redundant `waitFor()` or `waitForURL` before an action or an auto-waiting locator assertion
 - Explicit waits appear only before non-auto-waiting calls (`all`, `count`, `textContent`, `inputValue`, `allTextContents`)
 - Guards inside page objects use `waitFor()`, never `expect()`
@@ -113,6 +115,7 @@ Walk every changed line against the checklists below. Flag each violation with `
 - Body is divided into `test.step()` blocks, one per phase of the journey, each named in the user's language
 - **Each step verifies its own outcome** — assertions are not pooled into a trailing "verify everything" step
 - Page objects are instantiated in the test body (or `beforeEach`) before the first step, never at module scope; variable name is the camelCase of the class name
+- Values captured during the run (a name a form generated) are declared above the `describe` as `let name = ''` — an empty-string initializer, never a bare `let name: string`. Unassigned, the bare form reads back as `undefined`, and Playwright drops an option that is undefined: `buildingRow(undefined)` becomes `getByRole('link')` with no name filter and matches a row it should not (architecture rules § Instantiating Page Objects in Specs)
 - Only the page objects the spec actually uses are imported
 - Each test covers one logical user flow
 - No environment-specific value hardcoded in the spec or a page object — property names, accounts, addresses all arrive from `playwright-utils/test-data/<area>.data.ts` via the case id (`testData['QA-01']`); credentials arrive from `process.env`
@@ -134,17 +137,21 @@ Walk every changed line against the checklists below. Flag each violation with `
 - Every element the class touches is a `public readonly` locator property assigned in the constructor — no inline `this.page.locator(...)` inside a method
 - No zero-argument method that only returns a locator — that is a property
 - Methods returning a locator exist only for selectors parametrized by runtime data (`buildingRow(name)`, `buildingsAddedMessage(count)`), are derived from a stored property where possible, and are **not** prefixed `expect`
+- **Confirmation and row locators sit where they belong** — the create form owns `<thing>AddedMessage(count)` because the banner reports *its* submit, whether or not saving returns to the list; the list owns `<thing>Row(identifier)`, keyed by the value that module lists on (architecture rules § Page Object Conventions)
+- **A form that fills an inline grid addresses rows by index, never `.last()`** — the grid appends the row asynchronously, so `.last()` resolves to the previous row and the fills silently overwrite it. Its field locators are correspondingly plural (`nameInputs`, not `nameInput`), one element per row (scripting rules § Rows an Inline Grid Appends)
+- **A method that fills `n` rows returns the `n` values it generated**, so the spec can assert the confirmation count against `created.length` rather than a literal
 - No `expect*`-prefixed methods and no assertions of any kind — the spec verifies
 - No tiny single-action methods (`clickSaveButton`, `fillName`); cross-page navigation is the one legitimate one-click method
 - No method spans two pages — navigation ends one method and starts another on the next page object
 - Method names are camelCase descriptive verb phrases, no abbreviations
 - No two methods differing only in a hardcoded value — parametrize the existing one
 - Reuse first: the relevant class was scanned for existing coverage before a new method was added
-- A new page class is a file under `playwright-utils/pages/` in kebab-case with a PascalCase `Page`/`Component` class name — there is no central registration step
+- A new page class is a file under `playwright-utils/pages/<area>/` in kebab-case with a PascalCase `Page`/`Component` class name — grouped by domain area (`auth/`, `boardroom/`, `navigation/`, `property/<module>/`), never left at the root of `pages/`. There is no central registration step
 
 #### Architecture
 - The spec sits under `tests/<area>/` matching its actor or feature area; `tests/` holds specs and setup files only
 - Stateless utilities live in `playwright-utils/helpers/`, not inlined into a page method or spec
+- The application-wide loading overlay is waited on through `playwright-utils/helpers/loading-overlay`, not re-derived — a page object that builds its own `#Loading` locator, or waits only for `hidden` after a click that raises it, is a finding
 - Fixtures are reserved for resources needing setup/teardown; a page object is not a fixture
 - No probe or scratch spec, screenshot, trace or report artifact left in the diff
 - Auth setup files untouched unless the change intentionally targets them
