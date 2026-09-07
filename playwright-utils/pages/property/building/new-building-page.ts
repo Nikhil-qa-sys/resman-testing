@@ -29,8 +29,10 @@ export class NewBuildingPage {
   public readonly postalCodeInputs: Locator
 
   constructor(private page: Page) {
-    this.addButton = this.page.getByRole('button', { name: 'Add' })
-    this.saveButton = this.page.getByRole('button', { name: 'Save' })
+    // Exact: the grid toolbar also carries "Copy", and a substring match is one
+    // "Add Row" away from being ambiguous.
+    this.addButton = this.page.getByRole('button', { name: 'Add', exact: true })
+    this.saveButton = this.page.getByRole('button', { name: 'Save', exact: true })
     this.nameInputs = this.page.locator('input[name$=".Name"]')
     this.floorsInputs = this.page.locator('input[name$=".Floors"]')
     this.descriptionInputs = this.page.locator('input[name$=".Description"]')

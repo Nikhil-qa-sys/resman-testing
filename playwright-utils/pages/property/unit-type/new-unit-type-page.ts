@@ -44,8 +44,10 @@ export class NewUnitTypePage {
 
   constructor(private page: Page) {
     this.propertySelector = this.page.locator('#PropertyName')
-    this.addButton = this.page.getByRole('button', { name: 'Add' })
-    this.saveButton = this.page.getByRole('button', { name: 'Save' })
+    // Exact: the grid toolbar also carries "Copy", and a substring match is one
+    // "Add Row" away from being ambiguous.
+    this.addButton = this.page.getByRole('button', { name: 'Add', exact: true })
+    this.saveButton = this.page.getByRole('button', { name: 'Save', exact: true })
     this.nameInputs = this.page.locator('input[name$=".Name"]')
     this.descriptionInputs = this.page.locator('input[name$=".Description"]')
     this.bedroomsInputs = this.page.locator('input[name$=".Bedrooms"]')

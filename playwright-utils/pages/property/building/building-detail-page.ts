@@ -2,10 +2,24 @@ import { type Locator, type Page } from '@playwright/test'
 import { waitForLoadingToFinish } from '../../../helpers/loading-overlay'
 
 export class BuildingDetailPage {
-  // "Delete" under Actions is an anchor with no href, so it carries no link role and
-  // is reached by its text.
+  // "Delete" under Actions, pinned to that section rather than to the page.
+  //
+  // The ladder runs out here, verified against the live page: the control is an
+  // anchor with no href, so getByRole('link', { name: 'Delete' }) matches nothing;
+  // it sits directly inside a <ul> with no <li>, so there is no listitem to scope to;
+  // and the only element wrapping both it and its heading is a styling class. What
+  // does exist is the relationship — the anchor lives in the list following the
+  // "Actions" heading — and that is what XPath expresses. Page-wide text would work
+  // today (one match) and quietly pick the wrong control the day a tab or panel on
+  // this page grows a Delete of its own.
   public readonly deleteLink: Locator
-  // jQuery UI dialog: a real role="dialog" with a title and two real buttons.
+  // jQuery UI dialog: a real role="dialog" with two real buttons. Matched by its
+  // title, because the same role is used for the refusal this page can raise instead
+  // — "Cannot delete building", with a single OK — and an unfiltered dialog locator
+  // matches that one just as happily, then fails on a missing Yes button rather than
+  // saying what actually happened. Its aria-labelledby points at an id that does not
+  // resolve, so the dialog has no accessible name to match on; the title text is
+  // matched instead, and `has` is rooted at page as filter() requires.
   public readonly confirmDeleteDialog: Locator
   public readonly confirmDeleteMessage: Locator
   public readonly confirmDeleteYesButton: Locator
@@ -15,8 +29,12 @@ export class BuildingDetailPage {
   public readonly buildingDeletedMessage: Locator
 
   constructor(private page: Page) {
-    this.deleteLink = this.page.getByText('Delete', { exact: true })
-    this.confirmDeleteDialog = this.page.getByRole('dialog')
+    this.deleteLink = this.page.locator(
+      'xpath=//h4[normalize-space()="Actions"]/following-sibling::ul[1]//a[normalize-space()="Delete"]',
+    )
+    this.confirmDeleteDialog = this.page
+      .getByRole('dialog')
+      .filter({ has: this.page.getByText('Confirm Delete', { exact: true }) })
     this.confirmDeleteMessage = this.confirmDeleteDialog.getByText('Are you sure you want to delete this building?')
     this.confirmDeleteYesButton = this.confirmDeleteDialog.getByRole('button', { name: 'Yes', exact: true })
     this.confirmDeleteNoButton = this.confirmDeleteDialog.getByRole('button', { name: 'No', exact: true })
