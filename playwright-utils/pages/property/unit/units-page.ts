@@ -10,6 +10,10 @@ export class UnitsPage {
   // The list table carries no id of its own; the element wrapping it does, so the
   // rows are reached through that.
   public readonly unitListTable: Locator
+  // Every row inside that wrapper, which on a full page is 27: the column header, 25
+  // units, and the pager's own row, since #PageLinks renders in the table's <tfoot>.
+  // unitRow() filters this down by the number-cell link, so the extra two never match
+  // — but this property is not a unit count, and asserting one on it would be wrong.
   public readonly unitRows: Locator
   // Same pager the Buildings and Unit Types lists use: a sliding window of five page
   // numbers, so the link for the page after this one exists only once the current one
@@ -31,8 +35,8 @@ export class UnitsPage {
   // satisfy it. The `has` locator is rooted at page: filter() applies its chain
   // relative to the row, so one starting from unitListTable would never match inside
   // one.
-  unitRow(number: string): Locator {
-    return this.unitRows.filter({ has: this.page.getByRole('link', { name: number, exact: true }) })
+  unitRow(unitNumber: string): Locator {
+    return this.unitRows.filter({ has: this.page.getByRole('link', { name: unitNumber, exact: true }) })
   }
 
   // Parametrized by a page number that exists only while the window shows it.
@@ -44,21 +48,21 @@ export class UnitsPage {
     await this.newUnitLink.click()
   }
 
-  // Walks the list a page at a time until the row for `number` is on screen, and
+  // Walks the list a page at a time until the row for `unitNumber` is on screen, and
   // returns the page it was found on — 0 when the pager runs out first, which the
-  // caller's assertion on unitRow(number) then reports.
+  // caller's assertion on unitRow(unitNumber) then reports.
   //
   // The signal is the request the pager fires, not the loading overlay: the swap
   // finishes inside the click, so waiting on the overlay never catches it going up
   // and costs the appearance bound per page instead. "Units/UnitList" and not
   // "UnitList" — the module also pulls /Scripts/UnitList.js, which the looser
   // substring would match.
-  async openPageWithUnit(number: string): Promise<number> {
+  async openPageWithUnit(unitNumber: string): Promise<number> {
     let pageNumber = 1
 
     await this.unitListTable.waitFor()
 
-    while (await this.unitRow(number).count() === 0) {
+    while (await this.unitRow(unitNumber).count() === 0) {
       const nextPageLink = this.pagerPageLink(pageNumber + 1)
 
       if (await nextPageLink.count() === 0) {
@@ -81,11 +85,11 @@ export class UnitsPage {
   // the click fires rather than on the overlay it also raises: the response is exact
   // and costs what the request costs, where the overlay costs the appearance bound to
   // discover the swap is already over.
-  async openUnit(number: string) {
+  async openUnit(unitNumber: string) {
     const detailLoaded = this.page.waitForResponse(
       (response) => response.url().includes('Units/Detail') && response.status() === 200,
     )
-    await this.unitRow(number).getByRole('link', { name: number, exact: true }).click()
+    await this.unitRow(unitNumber).getByRole('link', { name: unitNumber, exact: true }).click()
     await detailLoaded
   }
 }

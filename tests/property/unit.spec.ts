@@ -13,8 +13,8 @@ import { testData } from '../../playwright-utils/test-data/units.data'
 
 let buildingName = ''
 let unitTypeName = ''
-let buildingForUnitToDeleteName = ''
-let unitTypeForUnitToDeleteName = ''
+let unitToDeleteBuildingName = ''
+let unitToDeleteTypeName = ''
 let unitToDeleteNumber = ''
 
 test.describe('Units', () => {
@@ -114,7 +114,7 @@ test.describe('Units', () => {
         testData['QA-06'].building,
         testData['QA-06'].buildingCount,
       )
-      buildingForUnitToDeleteName = createdBuildingNames[0]
+      unitToDeleteBuildingName = createdBuildingNames[0]
       await expect(newBuildingPage.buildingsAddedMessage(createdBuildingNames.length)).toBeVisible()
     })
 
@@ -126,7 +126,7 @@ test.describe('Units', () => {
         testData['QA-06'].unitType,
         testData['QA-06'].unitTypeCount,
       )
-      unitTypeForUnitToDeleteName = createdUnitTypeNames[0]
+      unitToDeleteTypeName = createdUnitTypeNames[0]
       await expect(newUnitTypePage.unitTypesAddedMessage(createdUnitTypeNames.length)).toBeVisible()
     })
 
@@ -151,8 +151,8 @@ test.describe('Units', () => {
     await test.step('Create the unit this test will delete', async () => {
       const createdUnitNumbers = await newUnitPage.addUnits(
         testData['QA-06'].unit,
-        buildingForUnitToDeleteName,
-        unitTypeForUnitToDeleteName,
+        unitToDeleteBuildingName,
+        unitToDeleteTypeName,
         testData['QA-06'].unitCount,
       )
       unitToDeleteNumber = createdUnitNumbers[0]
@@ -170,9 +170,7 @@ test.describe('Units', () => {
       await unitsPage.openUnit(unitToDeleteNumber)
       await expect(page).toHaveURL(/#\/Units\/Detail\//)
       await expect(unitDetailPage.unitNumberField(unitToDeleteNumber)).toBeVisible()
-      await expect(
-        unitDetailPage.buildingAndFloorField(buildingForUnitToDeleteName, testData['QA-06'].unit.floor),
-      ).toBeVisible()
+      await expect(unitDetailPage.buildingAndFloorField(unitToDeleteBuildingName, testData['QA-06'].unit.floor)).toBeVisible()
     })
 
     await test.step('Open the delete confirmation and dismiss it with No', async () => {

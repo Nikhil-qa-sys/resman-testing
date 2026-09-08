@@ -43,8 +43,8 @@ export class UnitDetailPage {
   // The detail table puts a caption and its value in the same cell — the cell reads
   // "Number qaU1a2b3c" — so a field is matched whole rather than by pairing two
   // elements. Parametrized by values known only at run time, so these are methods.
-  unitNumberField(number: string): Locator {
-    return this.page.getByRole('cell', { name: `Number ${number}`, exact: true })
+  unitNumberField(unitNumber: string): Locator {
+    return this.page.getByRole('cell', { name: `Number ${unitNumber}`, exact: true })
   }
 
   // Bld-Flr renders the two together as "<building> - <floor>", which is what proves
