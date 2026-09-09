@@ -12,6 +12,11 @@ export class NewApplicantPage {
   public readonly firstNameInput: Locator
   public readonly lastNameInput: Locator
   public readonly saveButton: Locator
+  // The application's dirty-form guard. Saving routes to the new applicant's detail
+  // page, and on some environments that route is intercepted by this confirmation
+  // even though the save itself succeeded — see save() below.
+  public readonly unsavedChangesDialog: Locator
+  public readonly leavePageButton: Locator
 
   constructor(private page: Page) {
     this.heading = this.page.getByRole('heading', { name: 'New Applicant', exact: true })
@@ -19,6 +24,8 @@ export class NewApplicantPage {
     this.firstNameInput = this.page.getByRole('textbox', { name: 'First name' })
     this.lastNameInput = this.page.getByRole('textbox', { name: 'Last name' })
     this.saveButton = this.page.getByRole('button', { name: 'Save', exact: true })
+    this.unsavedChangesDialog = this.page.getByRole('dialog', { name: 'Unsaved Changes' })
+    this.leavePageButton = this.unsavedChangesDialog.getByRole('button', { name: 'Leave page', exact: true })
   }
 
   // The unit autocomplete is the same jQuery UI widget the New Unit form uses, so a
@@ -112,11 +119,40 @@ export class NewApplicantPage {
   //
   // Residents/Detail is the detail page's own load and cannot be confused with the
   // Residents/New POST that precedes it.
+  //
+  // The guard below is the second thing that can happen to that route. Measured on rc:
+  // the POST to Residents/New answers 200 and the applicant is created, and the app
+  // then raises its "Unsaved Changes" confirmation on the way to the detail page —
+  // the form still counts as dirty — so the detail page is never fetched and the wait
+  // above times out on a save that in fact worked. qa never raises it. This is the
+  // rare genuinely optional dialog, so it is raced against the detail load rather than
+  // waited for: whichever happens first decides, and the environment that does not
+  // raise it pays nothing.
+  //
+  // Its button is dispatched rather than clicked because it cannot be clicked at all:
+  // the application leaves its loading spinner up while the route is paused, and
+  // #LoadingImage is a 151px box at z-index 1011 sitting over the middle of the
+  // dialog's button row, above the dialog's own 1002 — measured on rc. A real click,
+  // forced or not, lands on the spinner, so the event is sent straight to the button.
+  // Dismissing it clears the spinner and the detail page renders.
   async save() {
     const detailLoaded = this.page.waitForResponse(
       (response) => response.url().includes('Residents/Detail') && response.status() === 200,
     )
+    // Rejects on the environments that never raise the guard, which is the answer
+    // "no dialog" rather than a failure — the detail load is what decides there.
+    const guardShown = this.unsavedChangesDialog
+      .waitFor({ state: 'visible' })
+      .then(() => 'guard' as const)
+      .catch(() => 'no-guard' as const)
+
     await this.saveButton.click()
+
+    const firstOutcome = await Promise.race([detailLoaded.then(() => 'detail' as const), guardShown])
+    if (firstOutcome === 'guard') {
+      await this.leavePageButton.dispatchEvent('click')
+    }
+
     await detailLoaded
   }
 }

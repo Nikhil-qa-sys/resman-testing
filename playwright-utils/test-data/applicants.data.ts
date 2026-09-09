@@ -88,7 +88,11 @@ const rcTestData: typeof qaTestData = {
 // Regression environment test data
 const regressionTestData: typeof qaTestData = {
   'QA-07': {
-    property: 'Beta Tree - Automation',
+    // Not Beta Tree - Automation: that property exists on regression but the New
+    // Applicant form's fill-with-test-data shortcut never fetches available units
+    // for it, so the form is never completed. Core Automation 2026 is the property
+    // the applicant cases run against on regression.
+    property: 'Core Automation 2026',
     building: {
       namePrefix: 'regBld',
       floors: '4',
