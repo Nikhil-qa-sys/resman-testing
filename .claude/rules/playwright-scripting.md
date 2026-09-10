@@ -22,6 +22,12 @@ The app's source is in this repo or a checkout you can read.
 
 Only the running application is reachable (vendor app, deployed-only environment, no repo access). Inspect the **live DOM** instead of guessing.
 
+The same rule governs the API half of the suite: an endpoint, its headers and its
+payload shape are established by watching the application's own client send them —
+drive the flow in a browser with `page.on('request')` / `page.on('response')` logging,
+then replicate what was actually sent. An endpoint written from assumption is the API
+equivalent of a locator written from assumption.
+
 Preferred first step — record against the real app and read what it suggests:
 
 ```bash
@@ -585,7 +591,7 @@ What the config cannot express is a wait that differs per page — this applicat
 answers some clicks in under a second and others in minutes, behind the same overlay,
 and one global default cannot be right for both.
 
-Those numbers live in `playwright-utils/timeouts/timeouts.ts` and reach the code as
+Those numbers live in `playwright-utils/UI/timeouts/timeouts.ts` and reach the code as
 names, never as literals:
 
 ```typescript
@@ -971,7 +977,7 @@ await page.getByRole('textbox', { name: 'search' }).pressSequentially('query', {
 A test that has never run is a draft. Run it and confirm it passes before reporting it done:
 
 ```bash
-npx playwright test tests/<file>.spec.ts --project=chromium
+npx playwright test tests/UI/<area>/<file>.spec.ts --project=chromium
 ```
 
 A test case declares data for every configured environment, so a green run on one

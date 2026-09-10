@@ -36,7 +36,7 @@ jobs:
       - run: npm run typecheck
 
   e2e:
-    name: E2E (qa, chromium)
+    name: E2E (qa, api + chromium)
     runs-on: ubuntu-latest
     # Types are broken? Don't spend a browser run — or create test data — to
     # find that out.
@@ -79,7 +79,7 @@ jobs:
           BASE_URL: ${{ secrets.QA_BASE_URL }}
           TEST_USERNAME: ${{ secrets.QA_TEST_USERNAME }}
           TEST_PASSWORD: ${{ secrets.QA_TEST_PASSWORD }}
-        run: npx playwright test --project=chromium
+        run: npx playwright test --project=api --project=chromium
 
       - name: Upload report
         if: ${{ !cancelled() }}

@@ -9,10 +9,11 @@ paths: [tests/**,playwright-utils/**,playwright.config.ts]
 
 | Pattern | When | Location |
 |---------|------|----------|
-| **Page Object** | A page or major component with multi-step user flows | `playwright-utils/pages/` |
-| **Custom Fixture** | Resources needing setup/teardown (auth, DB, API) | `playwright-utils/fixtures/` |
-| **Helper Function** | Stateless utility, no cleanup needed | `playwright-utils/helpers/` |
-| **Named timeout** | A wait that cannot use the configured default | `playwright-utils/timeouts/` |
+| **Page Object** | A page or major component with multi-step user flows | `playwright-utils/UI/pages/` |
+| **API Client** | A group of HTTP endpoints a test drives without a browser | `playwright-utils/API/clients/` |
+| **Custom Fixture** | Resources needing setup/teardown (auth, DB, API) | `playwright-utils/UI/fixtures/`, `playwright-utils/API/fixtures/` |
+| **Helper Function** | Stateless utility, no cleanup needed | `playwright-utils/UI/helpers/`, `playwright-utils/API/helpers/` |
+| **Named timeout** | A wait that cannot use the configured default | `playwright-utils/UI/timeouts/` |
 
 ## Page Object Conventions
 
@@ -62,7 +63,7 @@ await expect(newBuildingPage.buildingsAddedMessage(1)).toBeVisible()
 - **Reuse first** — before adding a new method, scan the relevant class. Reuse if a method covers the flow; parametrize an existing method if it nearly does. Never write two methods that differ only in a hardcoded value
 
 ```typescript
-// playwright-utils/pages/login-page.ts
+// playwright-utils/UI/pages/login-page.ts
 import { type Locator, type Page } from '@playwright/test'
 
 export class LoginPage {
@@ -93,8 +94,8 @@ The spec drives the steps and owns every assertion:
 
 ```typescript
 import { expect, test } from '@playwright/test'
-import { HomePage } from '../../playwright-utils/pages/home-page'
-import { LoginPage } from '../../playwright-utils/pages/login-page'
+import { HomePage } from '../../../playwright-utils/UI/pages/home-page'
+import { LoginPage } from '../../../playwright-utils/UI/pages/login-page'
 
 const TEST_CASE_ID = 'QA-02'
 
@@ -139,12 +140,12 @@ export class HeaderComponent {
 There is no aggregator class and no `pom` fixture. Each page class is imported directly into the spec that needs it and instantiated with `page` inside the test.
 
 ```typescript
-// tests/student/dashboard.spec.ts
+// tests/UI/student/dashboard.spec.ts
 import { expect, test } from '@playwright/test'
-import { LoginPage } from '../../playwright-utils/pages/login-page'
-import { DashboardPage } from '../../playwright-utils/pages/dashboard-page'
-import { AccountsPage } from '../../playwright-utils/pages/accounts-page'
-import { testData } from '../../playwright-utils/test-data/accounts.data'
+import { LoginPage } from '../../../playwright-utils/UI/pages/login-page'
+import { DashboardPage } from '../../../playwright-utils/UI/pages/dashboard-page'
+import { AccountsPage } from '../../../playwright-utils/UI/pages/accounts-page'
+import { testData } from '../../../playwright-utils/UI/test-data/accounts.data'
 
 const TEST_CASE_ID = 'QA-05'
 
@@ -195,7 +196,7 @@ test.describe('Units', () => {
 })
 ```
 
-When adding a new page class: create `playwright-utils/pages/<area>/<page-name>.ts`
+When adding a new page class: create `playwright-utils/UI/pages/<area>/<page-name>.ts`
 and import it in the specs that need it. There is no central registration step.
 
 **Page objects are grouped by domain area, never left flat.** `pages/` holds
@@ -211,7 +212,7 @@ home at the root.
 Save authenticated sessions to avoid logging in every test:
 
 ```typescript
-// tests/auth.setup.ts
+// tests/UI/auth.setup.ts
 import { test as setup } from '@playwright/test'
 
 const studentFile = 'playwright-utils/.auth/student.json'
@@ -268,54 +269,110 @@ projects: [
 
 ## Directory Structure
 
-`tests/` is for spec files and setup files only — everything executable by the test runner. All support code lives in `playwright-utils/`.
+The suite is split at the top level by **how a test drives the application**: `UI/`
+for the browser, `API/` for its HTTP endpoints. The split runs through both trees —
+`tests/UI` is served by `playwright-utils/UI`, `tests/API` by `playwright-utils/API`
+— and nothing is imported across it. A UI page object never appears in an API spec,
+and an API client never appears in a UI one; what genuinely belongs to both is the
+environment (`playwright.config.ts`, `.env/`), not shared code.
+
+`tests/` is for spec files and setup files only — everything executable by the test
+runner. All support code lives in `playwright-utils/`.
 
 ```
 tests/
-  auth.setup.ts              # Auth state persistence (setup project)
-  student/                   # Authenticated student tests
-    login.spec.ts
-    courses.spec.ts
-    dashboard.spec.ts
-  admin/                     # Authenticated admin tests
-    courses.spec.ts
-    users.spec.ts
-  guest/                     # Unauthenticated tests
-    catalog.spec.ts
-    blog.spec.ts
+  UI/                        # Driven through a browser page
+    auth.setup.ts            # Auth state persistence (setup project)
+    property/
+      buildings.spec.ts
+      unit-type.spec.ts
+      unit.spec.ts
+    accounts/
+      applicants.spec.ts
+      resident.spec.ts
+  API/                       # Driven through the request fixture, no browser
+    property/
+      buildings.api.spec.ts  # QA-101
 
 playwright-utils/
-  pages/                     # One folder per domain area — never a flat pile of classes
-    auth/
-      login-page.ts
-    boardroom/
-      board-room-page.ts
-    navigation/
-      side-nav-component.ts  # Components shared across modules
-    property/                # One sub-folder per module under the area
-      building/
-        buildings-page.ts    # The module's list page
-        new-building-page.ts # The module's create form
-      unit-type/
-        unit-types-page.ts
-        new-unit-type-page.ts
-      unit/
-        units-page.ts
-        new-unit-page.ts
-  fixtures/                  # Only for resources needing setup/teardown (DB, API clients)
-  test-data/                 # Data only — no functions, no types, no barrel file
-    buildings.data.ts        # Buildings cases for qa / rc / regression
-    accounts.data.ts         # Accounts cases for qa / rc / regression
-  helpers/                   # Stateless utilities with no test data in them
-    loading-overlay.ts       # The app-wide #Loading overlay, waited on from anywhere
-  timeouts/                  # Every wait the suite cannot leave to the config default
-    timeouts.ts              # TIMEOUTS.loader.default / .slow / .appearance
+  UI/
+    pages/                   # One folder per domain area — never a flat pile of classes
+      auth/
+        login-page.ts
+      boardroom/
+        board-room-page.ts
+      navigation/
+        side-nav-component.ts  # Components shared across modules
+      property/              # One sub-folder per module under the area
+        building/
+          buildings-page.ts    # The module's list page
+          new-building-page.ts # The module's create form
+        unit-type/
+          unit-types-page.ts
+          new-unit-type-page.ts
+        unit/
+          units-page.ts
+          new-unit-page.ts
+    fixtures/                # Only for resources needing setup/teardown (DB, API clients)
+    test-data/               # Data only — no functions, no types, no barrel file
+      buildings.data.ts      # Buildings cases for qa / rc / regression
+      accounts.data.ts       # Accounts cases for qa / rc / regression
+    helpers/                 # Stateless utilities with no test data in them
+      loading-overlay.ts     # The app-wide #Loading overlay, waited on from anywhere
+    timeouts/                # Every wait the suite cannot leave to the config default
+      timeouts.ts            # TIMEOUTS.loader.default / .slow / .appearance
+  API/
+    clients/                 # Same area folders as pages/ — one class per endpoint group
+      auth/
+        auth-api.ts          # The OIDC sign-in round trip
+      property/
+        buildings-api.ts     # Property lookup, create, duplicate check, list
+    helpers/                 # Stateless utilities
+      html-form.ts           # Reads forms and options out of the HTML the app serves
+    test-data/               # Same one-object-per-environment store as the UI side
+      buildings.api.data.ts  # Buildings API cases for qa / rc / regression
 ```
+
+`playwright.config.ts` names the half each project runs — `testMatch: /API\/.*\.spec\.ts/`
+on the `api` project, `/UI\/.*\.spec\.ts/` on `chromium`, `firefox` and `webkit`.
+A browser project running an API spec would repeat it three times per run, and each
+of those runs creates a real record on a shared environment.
+
+## API Client Conventions
+
+An API client is the page object of the API half: it acts and it returns, the spec
+verifies. The conventions that make a page object readable carry over unchanged, and
+where they differ it is only because there is no DOM.
+
+- **One class per endpoint group**, filed under `clients/<area>/`, named for the area
+  plus an `Api` suffix (`AuthApi`, `BuildingsApi`), file kebab-case (`buildings-api.ts`)
+- **The constructor takes the `APIRequestContext`**, exactly as a page object takes
+  `Page`. The spec instantiates it in the test body from the `request` fixture, which
+  carries `baseURL` from the config and keeps the session cookies across calls
+- **No assertions** — `expect()` never appears in `playwright-utils/`, on either side
+  of the split. A method returns what the application answered; the spec decides
+  whether that is right
+- **Return what the caller must assert on.** A save returns the response *and* what it
+  generated (`{ name, saveResponse }`), so the spec asserts on the save itself rather
+  than trusting a method that returned normally. A lookup returns `''` or `undefined`
+  when the application has nothing, never a thrown error and never a default that
+  quietly points somewhere else
+- **A method covers one endpoint's job**, not one HTTP call for its own sake:
+  `getPropertyId(name)` fetches the form and reads the id out of it, because that is
+  what "look up a property" costs in this application
+- **Parsing the application's HTML belongs in a helper**, not in the spec and not
+  duplicated across clients. Anything read out of markup is scoped to the element it
+  belongs to first — a cell is matched inside the row the client already isolated, or
+  a lazy match runs across the row boundary and reads the next record's values
+- **Every endpoint, header and payload shape is established by observation**, the same
+  way a locator is in Mode B: drive the flow in a browser with a request log, then
+  replicate what the application's own client sent. See
+  [playwright-scripting.md](./playwright-scripting.md#establishing-the-dom-first)
 
 ## Environment-Specific Test Data
 
 Every value a test needs that is not a credential lives under
-`playwright-utils/test-data/`, organised as **one object per environment**, each
+`playwright-utils/UI/test-data/`, organised as **one object per environment**, each
 holding its test case ids and their data.
 
 **A test data file holds data and nothing else** — no functions, no type
@@ -335,7 +392,7 @@ declare the same cases with the same fields — a missing case or a dropped fiel
 a compile error, with no type alias in the file to maintain.
 
 ```typescript
-// playwright-utils/test-data/buildings.data.ts
+// playwright-utils/UI/test-data/buildings.data.ts
 
 // Get environment from process.env — TEST_ENV is the variable playwright.config.ts
 // selects .env/.env.<env> with, and it defaults to qa in both places.
@@ -379,7 +436,7 @@ A hyphenated id needs bracket access — `testData.QA-01` is a syntax error, sin
 `-` parses as subtraction:
 
 ```typescript
-import { testData } from '../../playwright-utils/test-data/buildings.data'
+import { testData } from '../../../playwright-utils/UI/test-data/buildings.data'
 
 await boardRoomPage.selectProperty(testData['QA-01'].property)
 await newBuildingPage.addBuilding(testData['QA-01'].building)
@@ -410,7 +467,7 @@ Rules for the store:
 `playwright.config.ts` still owns the defaults every ordinary step runs on. What it
 cannot express is a wait that differs *per page*: this application answers some
 clicks in under a second and others in minutes, behind the same overlay. Those
-numbers live in `playwright-utils/timeouts/timeouts.ts`, so tuning the suite as the
+numbers live in `playwright-utils/UI/timeouts/timeouts.ts`, so tuning the suite as the
 application changes is one edit in one file.
 
 ```typescript
@@ -481,8 +538,8 @@ When all tests in a `test.describe` block share the same setup steps (e.g., star
 ```typescript
 // GOOD: shared setup in beforeEach
 import { expect, test } from '@playwright/test'
-import { HomePage } from '../../playwright-utils/pages/home-page'
-import { BlogPage } from '../../playwright-utils/pages/blog-page'
+import { HomePage } from '../../../playwright-utils/UI/pages/home-page'
+import { BlogPage } from '../../../playwright-utils/UI/pages/blog-page'
 
 test.describe('Guest Smoke', () => {
   let homePage: HomePage

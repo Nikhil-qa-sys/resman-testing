@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test'
-import { LoginPage } from '../../playwright-utils/pages/auth/login-page'
-import { BoardRoomPage } from '../../playwright-utils/pages/boardroom/board-room-page'
-import { SideNavComponent } from '../../playwright-utils/pages/navigation/side-nav-component'
-import { UnitTypesPage } from '../../playwright-utils/pages/property/unit-type/unit-types-page'
-import { NewUnitTypePage } from '../../playwright-utils/pages/property/unit-type/new-unit-type-page'
-import { UnitTypeDetailPage } from '../../playwright-utils/pages/property/unit-type/unit-type-detail-page'
-import { testData } from '../../playwright-utils/test-data/unit-types.data'
+import { LoginPage } from '../../../playwright-utils/UI/pages/auth/login-page'
+import { BoardRoomPage } from '../../../playwright-utils/UI/pages/boardroom/board-room-page'
+import { SideNavComponent } from '../../../playwright-utils/UI/pages/navigation/side-nav-component'
+import { UnitTypesPage } from '../../../playwright-utils/UI/pages/property/unit-type/unit-types-page'
+import { NewUnitTypePage } from '../../../playwright-utils/UI/pages/property/unit-type/new-unit-type-page'
+import { UnitTypeDetailPage } from '../../../playwright-utils/UI/pages/property/unit-type/unit-type-detail-page'
+import { testData } from '../../../playwright-utils/UI/test-data/unit-types.data'
 
 let unitTypeToDeleteName = ''
 

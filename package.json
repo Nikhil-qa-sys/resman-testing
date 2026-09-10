@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "playwright test",
+    "test:ui": "playwright test --project=chromium --project=firefox --project=webkit",
+    "test:api": "playwright test --project=api",
     "test:rc": "TEST_ENV=rc playwright test",
     "test:qa": "TEST_ENV=qa playwright test",
     "test:regression": "TEST_ENV=regression playwright test",

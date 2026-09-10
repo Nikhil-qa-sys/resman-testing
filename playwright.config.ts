@@ -52,20 +52,31 @@ export default defineConfig({
     actionTimeout: 90_000,
   },
 
-  /* Configure projects for major browsers */
+  /* The suite is split in two: tests/UI drives the application in a browser, tests/API
+     drives its HTTP endpoints through the `request` fixture. Every project below names
+     the half it runs, so the API cases run once per run rather than three identical
+     times — each of those runs creates a real building on a shared environment. */
   projects: [
     {
+      name: 'api',
+      testMatch: /API\/.*\.spec\.ts/,
+    },
+
+    {
       name: 'chromium',
+      testMatch: /UI\/.*\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
 
     {
       name: 'firefox',
+      testMatch: /UI\/.*\.spec\.ts/,
       use: { ...devices['Desktop Firefox'] },
     },
 
     {
       name: 'webkit',
+      testMatch: /UI\/.*\.spec\.ts/,
       use: { ...devices['Desktop Safari'] },
     },
 

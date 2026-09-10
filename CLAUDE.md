@@ -4,7 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Playwright + TypeScript end-to-end test project (`resman-testing`) that drives the ResMan web application. It is a test suite, not an application — there is no app source in this repo, so locators are written against the live DOM (Mode B in `.claude/rules/playwright-scripting.md`).
+A Playwright + TypeScript end-to-end test project (`resman-testing`) that drives the ResMan web application. It is a test suite, not an application — there is no app source in this repo, so locators *and* API endpoints are established against the live application (Mode B in `.claude/rules/playwright-scripting.md`).
+
+The suite is split by how a test drives the application, and the split runs through
+both trees:
+
+- `tests/UI/**` + `playwright-utils/UI/**` — browser tests, page objects, the loading
+  overlay helper, named timeouts
+- `tests/API/**` + `playwright-utils/API/**` — HTTP tests through the `request`
+  fixture, API clients, HTML-form helpers
+
+Nothing is imported across the split; what belongs to both is the environment
+(`playwright.config.ts`, `.env/`), not shared code. `playwright.config.ts` gives each
+project a `testMatch` for its half, so the `api` project runs the API specs once and
+`chromium`/`firefox`/`webkit` run only the UI specs.
 
 ## Conventions and skills
 
@@ -16,8 +29,9 @@ writing or reviewing a test; they win over habit and over any skill's own wordin
   spec, waiting, test titles (`<CASE-ID> | behavior`), `test.step()` structure, naming
 - `.claude/rules/playwright-architecture.md` — page objects with constructor-assigned
   `public readonly` locators and no `expect()`, page classes filed under
-  `playwright-utils/pages/<area>/`, save-confirmation and row-locator ownership,
-  environment-keyed test data, anti-patterns
+  `playwright-utils/UI/pages/<area>/`, API clients under
+  `playwright-utils/API/clients/<area>/`, save-confirmation and row-locator ownership,
+  environment-keyed test data, the UI/API directory split, anti-patterns
 
 Two skills drive the workflow:
 
@@ -28,19 +42,22 @@ Two skills drive the workflow:
 ## Commands
 
 ```bash
-npm test                  # run all tests (chromium, firefox, webkit) against the "qa" env
+npm test                  # run everything (api + chromium, firefox, webkit) against the "qa" env
+npm run test:ui           # browser tests only (chromium, firefox, webkit)
+npm run test:api          # API tests only, once — no browser
 npm run test:rc           # run against the rc environment
 npm run test:qa           # run against the qa environment (default)
 npm run test:regression   # run against the regression environment
 npm run test:support      # run against the support environment
 
-npx playwright test tests/property/buildings.spec.ts   # run a single test file
-npx playwright test -g "QA-01"                         # run tests matching a title or case id
-npx playwright test --project=chromium       # run against one browser only
-npx playwright test --ui                     # interactive UI mode
-npx playwright test --debug                  # step-through debug mode
-npx playwright codegen                       # record a new test by clicking through a browser
-npx playwright show-report                   # open the last HTML report
+npx playwright test tests/UI/property/buildings.spec.ts  # run a single test file
+npx playwright test -g "QA-01"                          # run tests matching a title or case id
+npx playwright test -g "QA-101" --project=api           # run one API case
+npx playwright test --project=chromium                  # run against one browser only
+npx playwright test --ui                                # interactive UI mode
+npx playwright test --debug                             # step-through debug mode
+npx playwright codegen                                  # record a new test by clicking through a browser
+npx playwright show-report                              # open the last HTML report
 ```
 
 `npm run typecheck` (`tsc --noEmit`) is the only static check. It matters more than it
@@ -51,8 +68,8 @@ environment object is a compile error only. There is no lint or build step.
 ## CI
 
 `.github/workflows/ci.yml` gates PRs into `main` and pushes to `main`: a `Typecheck`
-job, then an `E2E (qa, chromium)` job that runs the suite against qa. The `.env/`
-files are gitignored and absent in CI — `dotenv` no-ops on a missing path, so the
+job, then an `E2E (qa, api + chromium)` job that runs the API specs and the chromium
+half of the UI specs against qa. The `.env/` files are gitignored and absent in CI — `dotenv` no-ops on a missing path, so the
 config falls through to the `QA_BASE_URL`, `QA_TEST_USERNAME` and `QA_TEST_PASSWORD`
 repository secrets. Each e2e run creates a real building on the shared qa
 environment; there is no teardown.
@@ -69,6 +86,7 @@ When adding a new environment, create `.env/.env.<name>` and a corresponding `te
 
 ## Architecture notes
 
-- `playwright.config.ts` is the single source of truth for run behavior: it dotenv-loads the environment (see above), then defines the three-browser (`chromium`, `firefox`, `webkit`) test matrix and shared settings (trace on first retry, HTML reporter).
-- Tests live under `tests/` and are picked up by `testDir: './tests'` — any `*.spec.ts` file there is auto-discovered, no manual registration needed.
+- `playwright.config.ts` is the single source of truth for run behavior: it dotenv-loads the environment (see above), then defines the project matrix — `api` for `tests/API`, `chromium`/`firefox`/`webkit` for `tests/UI` — and shared settings (trace on first retry, HTML reporter).
+- Tests live under `tests/` and are picked up by `testDir: './tests'` — any `*.spec.ts` file there is auto-discovered, no manual registration needed, but it must sit under `tests/UI/` or `tests/API/` to match a project's `testMatch`.
+- The API tests sign in the way the application does: `AuthApi.signIn()` walks the OIDC round trip (application redirect → identity provider login form → `/signin-oidc` token hand-off) with nothing hardcoded, so the same code authenticates against every environment. The `request` fixture holds the resulting session cookies for the rest of the test.
 - CI-specific behavior is driven off `process.env.CI` in the config (retries, worker count, `forbidOnly`) rather than a separate config file.
