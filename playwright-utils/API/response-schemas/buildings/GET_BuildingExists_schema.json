@@ -1,0 +1,15 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Buildings/BuildingExists",
+    "type": "object",
+    "anyOf": [
+        {
+            "properties": { "empty": { "type": "boolean" } },
+            "required": ["empty"]
+        },
+        {
+            "properties": { "message": { "type": "string" } },
+            "required": ["message"]
+        }
+    ]
+}

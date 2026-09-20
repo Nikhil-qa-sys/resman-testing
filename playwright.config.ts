@@ -60,6 +60,14 @@ export default defineConfig({
     {
       name: 'api',
       testMatch: /API\/.*\.spec\.ts/,
+      /* The API cases create real records on a shared property and are not isolated from
+         one another, so they run in file order rather than all at once. This is also what
+         keeps the worker-scoped sign-in worth having: fully parallel, a six-test file was
+         spread over five workers and paid five OIDC round trips to run six requests.
+
+         Scoped to this project on purpose — the browser projects below stay fully
+         parallel, where isolation comes from a fresh context per test. */
+      fullyParallel: false,
     },
 
     {

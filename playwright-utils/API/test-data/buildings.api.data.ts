@@ -20,6 +20,20 @@ const qaTestData = {
       postalCode: '75201',
     },
   },
+  'QA-102': {
+    property: 'Beta Tree - Automation',
+    building: {
+      // Unused by QA-102 — the case supplies each name at an exact length — but declared
+      // so every case in this store carries the same shape.
+      namePrefix: 'qaApiBld',
+      floors: '4',
+      description: 'QA name-length boundary check',
+      streetAddress: '789 Playwright Blvd',
+      city: 'Dallas',
+      province: 'TX',
+      postalCode: '75201',
+    },
+  },
 }
 
 // RC environment test data
@@ -36,6 +50,20 @@ const rcTestData: typeof qaTestData = {
       postalCode: '75201',
     },
   },
+  'QA-102': {
+    property: 'Beta Tree - Automation',
+    building: {
+      // Unused by QA-102 — the case supplies each name at an exact length — but declared
+      // so every case in this store carries the same shape.
+      namePrefix: 'rcApiBld',
+      floors: '4',
+      description: 'RC name-length boundary check',
+      streetAddress: '789 Playwright Blvd',
+      city: 'Dallas',
+      province: 'TX',
+      postalCode: '75201',
+    },
+  },
 }
 
 // Regression environment test data
@@ -46,6 +74,20 @@ const regressionTestData: typeof qaTestData = {
       namePrefix: 'regApiBld',
       floors: '4',
       description: 'Regression automation building via API',
+      streetAddress: '789 Playwright Blvd',
+      city: 'Dallas',
+      province: 'TX',
+      postalCode: '75201',
+    },
+  },
+  'QA-102': {
+    property: 'Beta Tree - Automation',
+    building: {
+      // Unused by QA-102 — the case supplies each name at an exact length — but declared
+      // so every case in this store carries the same shape.
+      namePrefix: 'regApiBld',
+      floors: '4',
+      description: 'Regression name-length boundary check',
       streetAddress: '789 Playwright Blvd',
       city: 'Dallas',
       province: 'TX',

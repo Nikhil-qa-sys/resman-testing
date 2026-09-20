@@ -21,8 +21,9 @@ project a `testMatch` for its half, so the `api` project runs the API specs once
 
 ## Conventions and skills
 
-How tests in this repo are written is defined in two rules files. Read both before
-writing or reviewing a test; they win over habit and over any skill's own wording:
+How tests in this repo are written is defined in three rules files. Read the ones
+that cover the half you are working in before writing or reviewing a test; they win
+over habit and over any skill's own wording:
 
 - `.claude/rules/playwright-scripting.md` — Mode B DOM discovery, locator priority
   and uniqueness, inline-grid rows (`nth(index)`, never `.last()`), assertions in the
@@ -32,11 +33,18 @@ writing or reviewing a test; they win over habit and over any skill's own wordin
   `playwright-utils/UI/pages/<area>/`, API clients under
   `playwright-utils/API/clients/<area>/`, save-confirmation and row-locator ownership,
   environment-keyed test data, the UI/API directory split, anti-patterns
+- `.claude/rules/playwright-api-framework.md` — the API half only (`tests/API/**` +
+  `playwright-utils/API/**`): the three layers (transport `core/`, domain `clients/`,
+  spec), the `RequestHandler` fluent builder, expected status as the terminal method's
+  argument, the log-attaching `should*` matchers, Ajv response schemas, request-object
+  templates and faker-backed builders, the worker-scoped signed-in context
 
-Two skills drive the workflow:
+Three skills drive the workflow:
 
-- `pw-new-test-cli` — write a new test from user-supplied steps, exploring the live
+- `pw-new-test-cli` — write a new UI test from user-supplied steps, exploring the live
   app with `@playwright/cli` (there is no app source here)
+- `pw-new-api-test` — write a new API test from user-supplied steps on the
+  `RequestHandler` framework, establishing the endpoint contract by observation
 - `pw-test-audit` — audit the most recent test change against the rules with fresh eyes
 
 ## Commands
@@ -88,5 +96,14 @@ When adding a new environment, create `.env/.env.<name>` and a corresponding `te
 
 - `playwright.config.ts` is the single source of truth for run behavior: it dotenv-loads the environment (see above), then defines the project matrix — `api` for `tests/API`, `chromium`/`firefox`/`webkit` for `tests/UI` — and shared settings (trace on first retry, HTML reporter).
 - Tests live under `tests/` and are picked up by `testDir: './tests'` — any `*.spec.ts` file there is auto-discovered, no manual registration needed, but it must sit under `tests/UI/` or `tests/API/` to match a project's `testMatch`.
-- The API tests sign in the way the application does: `AuthApi.signIn()` walks the OIDC round trip (application redirect → identity provider login form → `/signin-oidc` token hand-off) with nothing hardcoded, so the same code authenticates against every environment. The `request` fixture holds the resulting session cookies for the rest of the test.
+- The API tests run on their own framework under `playwright-utils/API/`, layered as
+  transport (`core/` — the `RequestHandler` builder, the `APILogger`, the log-attaching
+  `should*` matchers, the Ajv wrapper), domain (`clients/` — one class per endpoint group,
+  taking a `RequestHandler`) and spec. A failure carries the requests and responses that
+  produced it, so a red run is diagnosable from the report alone.
+- They sign in the way the application does: `AuthApi.signIn()` walks the OIDC round trip
+  (application redirect → identity provider login form → `/signin-oidc` hand-off) with
+  nothing hardcoded, so the same code authenticates against every environment. Because the
+  credential is a cookie jar rather than a token, the signed-in `APIRequestContext` is
+  itself a **worker-scoped** fixture — one sign-in per worker, not one per test.
 - CI-specific behavior is driven off `process.env.CI` in the config (retries, worker count, `forbidOnly`) rather than a separate config file.

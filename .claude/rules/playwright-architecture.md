@@ -290,9 +290,9 @@ tests/
     accounts/
       applicants.spec.ts
       resident.spec.ts
-  API/                       # Driven through the request fixture, no browser
+  API/                       # Driven through the `api` fixture, no browser
     property/
-      buildings.api.spec.ts  # QA-101
+      buildings.api.spec.ts  # QA-101, QA-102
 
 playwright-utils/
   UI/
@@ -321,7 +321,15 @@ playwright-utils/
       loading-overlay.ts     # The app-wide #Loading overlay, waited on from anywhere
     timeouts/                # Every wait the suite cannot leave to the config default
       timeouts.ts            # TIMEOUTS.loader.default / .slow / .appearance
-  API/
+  API/                       # See playwright-api-framework.md for the rules on this half
+    api-config.ts            # Non-secret, non-per-case environment values
+    core/                    # The framework itself — no application knowledge in here
+      request-handler.ts     # The fluent HTTP builder every client calls through
+      logger.ts              # APILogger — the per-test request/response buffer
+      custom-expect.ts       # The extended `expect` — matchers that attach API logs
+      schema-validator.ts    # Ajv wrapper, reads response-schemas/
+    fixtures/
+      api-fixtures.ts        # The extended `test`: api, config, worker-scoped authContext
     clients/                 # Same area folders as pages/ — one class per endpoint group
       auth/
         auth-api.ts          # The OIDC sign-in round trip
@@ -329,6 +337,13 @@ playwright-utils/
         buildings-api.ts     # Property lookup, create, duplicate check, list
     helpers/                 # Stateless utilities
       html-form.ts           # Reads forms and options out of the HTML the app serves
+      create-session.ts      # Signs in and returns the context the worker fixture holds
+      data-generator.ts      # Clones a request-object template and fills it
+    request-objects/         # Request payload templates — the wire shape, no values
+      POST-building.json
+    response-schemas/        # One folder per resource, one file per operation
+      buildings/
+        GET_BuildingExists_schema.json
     test-data/               # Same one-object-per-environment store as the UI side
       buildings.api.data.ts  # Buildings API cases for qa / rc / regression
 ```
@@ -340,34 +355,28 @@ of those runs creates a real record on a shared environment.
 
 ## API Client Conventions
 
-An API client is the page object of the API half: it acts and it returns, the spec
-verifies. The conventions that make a page object readable carry over unchanged, and
-where they differ it is only because there is no DOM.
+The API half has its own rules file — **[playwright-api-framework.md](./playwright-api-framework.md)**
+— and it is the authority for everything under `tests/API/` and `playwright-utils/API/`.
+Read it before writing an API client or spec; where it and this file disagree, it wins.
 
-- **One class per endpoint group**, filed under `clients/<area>/`, named for the area
-  plus an `Api` suffix (`AuthApi`, `BuildingsApi`), file kebab-case (`buildings-api.ts`)
-- **The constructor takes the `APIRequestContext`**, exactly as a page object takes
-  `Page`. The spec instantiates it in the test body from the `request` fixture, which
-  carries `baseURL` from the config and keeps the session cookies across calls
-- **No assertions** — `expect()` never appears in `playwright-utils/`, on either side
-  of the split. A method returns what the application answered; the spec decides
-  whether that is right
-- **Return what the caller must assert on.** A save returns the response *and* what it
-  generated (`{ name, saveResponse }`), so the spec asserts on the save itself rather
-  than trusting a method that returned normally. A lookup returns `''` or `undefined`
-  when the application has nothing, never a thrown error and never a default that
-  quietly points somewhere else
-- **A method covers one endpoint's job**, not one HTTP call for its own sake:
-  `getPropertyId(name)` fetches the form and reads the id out of it, because that is
-  what "look up a property" costs in this application
-- **Parsing the application's HTML belongs in a helper**, not in the spec and not
-  duplicated across clients. Anything read out of markup is scoped to the element it
-  belongs to first — a cell is matched inside the row the client already isolated, or
-  a lazy match runs across the row boundary and reads the next record's values
-- **Every endpoint, header and payload shape is established by observation**, the same
-  way a locator is in Mode B: drive the flow in a browser with a request log, then
-  replicate what the application's own client sent. See
-  [playwright-scripting.md](./playwright-scripting.md#establishing-the-dom-first)
+What carries over from the page object unchanged: one class per endpoint group under
+`clients/<area>/`, named for the area plus an `Api` suffix (`BuildingsApi`, file
+`buildings-api.ts`); **no assertions anywhere in `playwright-utils/`**; a method covers
+one endpoint's *job* rather than one HTTP call; parsing the application's markup belongs
+in the client or a helper, never in a spec; and every endpoint, header and payload shape
+is established by observation, exactly as a locator is in Mode B.
+
+What differs, and why the framework file is the one to read:
+
+- **The constructor takes a `RequestHandler`, not an `APIRequestContext`.** That is what
+  gives every call inside a client method its logging, status validation and report step.
+  `AuthApi` is the single exception — it runs before the handler exists, because it is
+  what produces the signed-in context the handler wraps.
+- **A validated status is not proof the application accepted the request.** ResMan answers
+  200 to a rejected save, so a client returns the application-level outcome and the spec
+  asserts on that.
+- **Specs import `test` and `expect` from `playwright-utils/API/`**, never from
+  `@playwright/test` — otherwise they lose the `api` fixture and the log-attaching matchers.
 
 ## Environment-Specific Test Data
 
