@@ -4,6 +4,71 @@ const ENV = process.env.TEST_ENV || 'qa'
 
 // QA environment test data
 const qaTestData = {
+  // Buildings cases
+  'QA-01': {
+    property: 'Beta Tree - Automation',
+    building: {
+      namePrefix: 'qaBld',
+      floors: '4',
+      description: 'QA automation building',
+      streetAddress: '789 Playwright Blvd',
+      city: 'Dallas',
+      province: 'TX',
+      postalCode: '75201',
+    },
+    // How many building rows the form is filled with. The confirmation banner counts
+    // the rows saved, so the test asserts this same number back.
+    buildingCount: 1,
+  },
+  'QA-04': {
+    property: 'Beta Tree - Automation',
+    building: {
+      namePrefix: 'qaBld',
+      floors: '4',
+      description: 'QA automation building',
+      streetAddress: '789 Playwright Blvd',
+      city: 'Dallas',
+      province: 'TX',
+      postalCode: '75201',
+    },
+    buildingCount: 1,
+  },
+  // Unit type cases
+  'QA-02': {
+    property: 'Beta Tree - Automation',
+    unitType: {
+      namePrefix: 'qaUT',
+      description: 'QA automation unit type',
+      bedrooms: '2',
+      bathrooms: '1',
+      marketRent: '1500',
+      rentCategory: 'Resident Rent',
+      requiredDeposit: '1200',
+      depositCategory: 'Security Deposit Paid',
+      squareFootage: '950',
+      maximumOccupancy: '4',
+    },
+    // How many unit type rows the form is filled with. The confirmation banner counts
+    // the rows saved, so the test asserts this same number back.
+    unitTypeCount: 1,
+  },
+  'QA-05': {
+    property: 'Beta Tree - Automation',
+    unitType: {
+      namePrefix: 'qaUT',
+      description: 'QA automation unit type',
+      bedrooms: '2',
+      bathrooms: '1',
+      marketRent: '1500',
+      rentCategory: 'Resident Rent',
+      requiredDeposit: '1200',
+      depositCategory: 'Security Deposit Paid',
+      squareFootage: '950',
+      maximumOccupancy: '4',
+    },
+    unitTypeCount: 1,
+  },
+  // Unit cases
   'QA-03': {
     property: 'Beta Tree - Automation',
     // The precondition: QA-03 creates its own building and unit type before the
@@ -86,6 +151,71 @@ const qaTestData = {
 
 // RC environment test data
 const rcTestData: typeof qaTestData = {
+  // Buildings cases
+  'QA-01': {
+    property: 'Beta Tree - Automation',
+    building: {
+      namePrefix: 'rcBld',
+      floors: '4',
+      description: 'RC automation building',
+      streetAddress: '789 Playwright Blvd',
+      city: 'Dallas',
+      province: 'TX',
+      postalCode: '75201',
+    },
+    // How many building rows the form is filled with. The confirmation banner counts
+    // the rows saved, so the test asserts this same number back.
+    buildingCount: 1,
+  },
+  'QA-04': {
+    property: 'Beta Tree - Automation',
+    building: {
+      namePrefix: 'rcBld',
+      floors: '4',
+      description: 'RC automation building',
+      streetAddress: '789 Playwright Blvd',
+      city: 'Dallas',
+      province: 'TX',
+      postalCode: '75201',
+    },
+    buildingCount: 1,
+  },
+  // Unit type cases
+  'QA-02': {
+    property: 'Beta Tree - Automation',
+    unitType: {
+      namePrefix: 'rcUT',
+      description: 'RC automation unit type',
+      bedrooms: '2',
+      bathrooms: '1',
+      marketRent: '1500',
+      rentCategory: 'Auto Rent Charge',
+      requiredDeposit: '1200',
+      depositCategory: 'Security Deposit',
+      squareFootage: '950',
+      maximumOccupancy: '4',
+    },
+    // How many unit type rows the form is filled with. The confirmation banner counts
+    // the rows saved, so the test asserts this same number back.
+    unitTypeCount: 1,
+  },
+  'QA-05': {
+    property: 'Beta Tree - Automation',
+    unitType: {
+      namePrefix: 'rcUT',
+      description: 'RC automation unit type',
+      bedrooms: '2',
+      bathrooms: '1',
+      marketRent: '1500',
+      rentCategory: 'Auto Rent Charge',
+      requiredDeposit: '1200',
+      depositCategory: 'Security Deposit',
+      squareFootage: '950',
+      maximumOccupancy: '4',
+    },
+    unitTypeCount: 1,
+  },
+  // Unit cases
   'QA-03': {
     property: 'Beta Tree - Automation',
     building: {
@@ -162,6 +292,71 @@ const rcTestData: typeof qaTestData = {
 
 // Regression environment test data
 const regressionTestData: typeof qaTestData = {
+  // Buildings cases
+  'QA-01': {
+    property: 'Beta Tree - Automation',
+    building: {
+      namePrefix: 'regBld',
+      floors: '4',
+      description: 'Regression automation building',
+      streetAddress: '789 Playwright Blvd',
+      city: 'Dallas',
+      province: 'TX',
+      postalCode: '75201',
+    },
+    // How many building rows the form is filled with. The confirmation banner counts
+    // the rows saved, so the test asserts this same number back.
+    buildingCount: 1,
+  },
+  'QA-04': {
+    property: 'Beta Tree - Automation',
+    building: {
+      namePrefix: 'regBld',
+      floors: '4',
+      description: 'Regression automation building',
+      streetAddress: '789 Playwright Blvd',
+      city: 'Dallas',
+      province: 'TX',
+      postalCode: '75201',
+    },
+    buildingCount: 1,
+  },
+  // Unit type cases
+  'QA-02': {
+    property: 'Beta Tree - Automation',
+    unitType: {
+      namePrefix: 'regUT',
+      description: 'Regression automation unit type',
+      bedrooms: '2',
+      bathrooms: '1',
+      marketRent: '1500',
+      rentCategory: 'Accelerated Rent Charges',
+      requiredDeposit: '1200',
+      depositCategory: 'Security Deposit',
+      squareFootage: '950',
+      maximumOccupancy: '4',
+    },
+    // How many unit type rows the form is filled with. The confirmation banner counts
+    // the rows saved, so the test asserts this same number back.
+    unitTypeCount: 1,
+  },
+  'QA-05': {
+    property: 'Beta Tree - Automation',
+    unitType: {
+      namePrefix: 'regUT',
+      description: 'Regression automation unit type',
+      bedrooms: '2',
+      bathrooms: '1',
+      marketRent: '1500',
+      rentCategory: 'Accelerated Rent Charges',
+      requiredDeposit: '1200',
+      depositCategory: 'Security Deposit',
+      squareFootage: '950',
+      maximumOccupancy: '4',
+    },
+    unitTypeCount: 1,
+  },
+  // Unit cases
   'QA-03': {
     property: 'Beta Tree - Automation',
     building: {

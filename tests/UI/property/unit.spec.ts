@@ -9,7 +9,7 @@ import { NewUnitTypePage } from '../../../playwright-utils/UI/pages/property/uni
 import { UnitsPage } from '../../../playwright-utils/UI/pages/property/unit/units-page'
 import { NewUnitPage } from '../../../playwright-utils/UI/pages/property/unit/new-unit-page'
 import { UnitDetailPage } from '../../../playwright-utils/UI/pages/property/unit/unit-detail-page'
-import { testData } from '../../../playwright-utils/UI/test-data/units.data'
+import { testData } from '../../../playwright-utils/UI/test-data/property.data'
 
 let buildingName = ''
 let unitTypeName = ''

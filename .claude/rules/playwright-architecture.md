@@ -315,8 +315,8 @@ playwright-utils/
           new-unit-page.ts
     fixtures/                # Only for resources needing setup/teardown (DB, API clients)
     test-data/               # Data only — no functions, no types, no barrel file
-      buildings.data.ts      # Buildings cases for qa / rc / regression
-      accounts.data.ts       # Accounts cases for qa / rc / regression
+      property.data.ts       # Property area: buildings, unit type and unit cases
+      accounts.data.ts       # Accounts area: applicant and resident cases
     helpers/                 # Stateless utilities with no test data in them
       loading-overlay.ts     # The app-wide #Loading overlay, waited on from anywhere
     timeouts/                # Every wait the suite cannot leave to the config default
@@ -345,7 +345,7 @@ playwright-utils/
       buildings/
         GET_BuildingExists_schema.json
     test-data/               # Same one-object-per-environment store as the UI side
-      buildings.api.data.ts  # Buildings API cases for qa / rc / regression
+      property.api.data.ts   # Property area API cases for qa / rc / regression
 ```
 
 `playwright.config.ts` names the half each project runs — `testMatch: /API\/.*\.spec\.ts/`
@@ -389,11 +389,18 @@ declarations, no helpers. Types belong to the page object that consumes the data
 behaviour belongs to the page object that acts on it. A reader opening a data file
 should see only values.
 
-**One file per spec area, not one file for the suite.** A single store holding
-every case for every environment grows into thousands of lines and turns every new
-case into a merge conflict. `buildings.data.ts` holds the Buildings cases and is
-imported directly by `buildings.spec.ts`; each file stays the size of the spec it
-serves. No barrel file — a spec imports the one data file it needs.
+**One file per area, not one per module and not one for the suite.** The area is the
+folder the specs sit in: `tests/UI/property/` is served by `test-data/property.data.ts`,
+`tests/UI/accounts/` by `test-data/accounts.data.ts`. Every module under an area shares
+that one file — buildings, unit types and units all read `property.data.ts`; applicants
+and residents both read `accounts.data.ts` — because the modules under an area overlap
+in what they need (a unit case declares the building and unit type it creates first) and
+splitting them per module duplicated the same blocks across files that then drifted
+apart. Case ids are unique across the suite, so there is no collision: a module's cases
+sit together under a `// <Module> cases` comment inside each environment object, in the
+same order in all three. One store for the whole suite is the other extreme — it grows
+into thousands of lines and turns every new case into a merge conflict. No barrel file —
+a spec imports the one data file its area owns.
 
 The first environment object is written plainly; the others are annotated
 `typeof <first>TestData`. That single annotation forces every environment to
@@ -401,7 +408,7 @@ declare the same cases with the same fields — a missing case or a dropped fiel
 a compile error, with no type alias in the file to maintain.
 
 ```typescript
-// playwright-utils/UI/test-data/buildings.data.ts
+// playwright-utils/UI/test-data/property.data.ts
 
 // Get environment from process.env — TEST_ENV is the variable playwright.config.ts
 // selects .env/.env.<env> with, and it defaults to qa in both places.
@@ -409,9 +416,15 @@ const ENV = process.env.TEST_ENV || 'qa'
 
 // QA environment test data
 const qaTestData = {
+  // Buildings cases
   'QA-01': {
     property: 'Beta Tree - Automation',
     building: { namePrefix: 'qaBld', floors: '4', /* ... */ },
+  },
+  // Unit type cases
+  'QA-02': {
+    property: 'Beta Tree - Automation',
+    unitType: { namePrefix: 'qaUT', bedrooms: '2', /* ... */ },
   },
 }
 
@@ -445,7 +458,7 @@ A hyphenated id needs bracket access — `testData.QA-01` is a syntax error, sin
 `-` parses as subtraction:
 
 ```typescript
-import { testData } from '../../../playwright-utils/UI/test-data/buildings.data'
+import { testData } from '../../../playwright-utils/UI/test-data/property.data'
 
 await boardRoomPage.selectProperty(testData['QA-01'].property)
 await newBuildingPage.addBuilding(testData['QA-01'].building)
@@ -454,7 +467,8 @@ await newBuildingPage.addBuilding(testData['QA-01'].building)
 Rules for the store:
 
 - **One object per environment**, named `<env>TestData`, each keyed by test case
-  id. A new test case is added to all three objects in the same edit
+  id. A new test case is added to all three objects in the same edit, under the
+  `// <Module> cases` comment for the module it belongs to
 - **Data only** — a function or an exported type in a data file means logic has
   leaked out of the page object it belongs to
 - **Later environment objects are annotated `typeof <first>TestData`**, so the

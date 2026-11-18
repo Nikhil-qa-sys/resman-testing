@@ -5,7 +5,7 @@ import { SideNavComponent } from '../../../playwright-utils/UI/pages/navigation/
 import { UnitTypesPage } from '../../../playwright-utils/UI/pages/property/unit-type/unit-types-page'
 import { NewUnitTypePage } from '../../../playwright-utils/UI/pages/property/unit-type/new-unit-type-page'
 import { UnitTypeDetailPage } from '../../../playwright-utils/UI/pages/property/unit-type/unit-type-detail-page'
-import { testData } from '../../../playwright-utils/UI/test-data/unit-types.data'
+import { testData } from '../../../playwright-utils/UI/test-data/property.data'
 
 let unitTypeToDeleteName = ''
 
