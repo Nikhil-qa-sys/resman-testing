@@ -5,7 +5,7 @@ import { SideNavComponent } from '../../../playwright-utils/UI/pages/navigation/
 import { BuildingsPage } from '../../../playwright-utils/UI/pages/property/building/buildings-page'
 import { NewBuildingPage } from '../../../playwright-utils/UI/pages/property/building/new-building-page'
 import { BuildingDetailPage } from '../../../playwright-utils/UI/pages/property/building/building-detail-page'
-import { testData } from '../../../playwright-utils/UI/test-data/buildings.data'
+import { testData } from '../../../playwright-utils/UI/test-data/property.data'
 
 let buildingName = ''
 let buildingToDeleteName = ''

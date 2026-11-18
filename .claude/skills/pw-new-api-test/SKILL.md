@@ -217,7 +217,7 @@ import { test } from '../../../playwright-utils/API/fixtures/api-fixtures'
 import { expect } from '../../../playwright-utils/API/core/custom-expect'
 import { BuildingsApi } from '../../../playwright-utils/API/clients/property/buildings-api'
 import { getNewRandomBuilding } from '../../../playwright-utils/API/helpers/data-generator'
-import { testData } from '../../../playwright-utils/API/test-data/buildings.api.data'
+import { testData } from '../../../playwright-utils/API/test-data/property.api.data'
 
 test.describe('Buildings API', () => {
   test('QA-102 | User can create and delete a building through the API', async ({ api }) => {

@@ -4,6 +4,47 @@ const ENV = process.env.TEST_ENV || 'qa'
 
 // QA environment test data
 const qaTestData = {
+  // Applicant cases
+  'QA-07': {
+    property: 'Beta Tree - Automation',
+    // The precondition: QA-07 creates its own building, unit type and unit before
+    // the applicant, so the unit it assigns is guaranteed vacant and the run never
+    // depends on a record another case left behind.
+    building: {
+      namePrefix: 'qaBld',
+      floors: '4',
+      description: 'QA automation building',
+      streetAddress: '100 Automation Way',
+      city: 'Austin',
+      province: 'TX',
+      postalCode: '73301',
+    },
+    buildingCount: 1,
+    unitType: {
+      namePrefix: 'qaUT',
+      description: 'QA automation unit type',
+      bedrooms: '2',
+      bathrooms: '1',
+      marketRent: '1500',
+      rentCategory: 'Resident Rent',
+      requiredDeposit: '1200',
+      depositCategory: 'Security Deposit Paid',
+      squareFootage: '950',
+      maximumOccupancy: '4',
+    },
+    unitTypeCount: 1,
+    unit: {
+      numberPrefix: 'qaU',
+      floor: '1',
+      status: 'Ready',
+      streetAddress: 'Rose street 61',
+      city: 'Michigan',
+      province: 'TX',
+      postalCode: '75001',
+    },
+    unitCount: 1,
+  },
+  // Resident cases
   'QA-08': {
     property: 'Beta Tree - Automation',
     // The precondition: QA-08 creates its own building, unit type and unit before
@@ -49,6 +90,44 @@ const qaTestData = {
 
 // RC environment test data
 const rcTestData: typeof qaTestData = {
+  // Applicant cases
+  'QA-07': {
+    property: 'Beta Tree - Automation',
+    building: {
+      namePrefix: 'rcBld',
+      floors: '4',
+      description: 'RC automation building',
+      streetAddress: '100 Automation Way',
+      city: 'Austin',
+      province: 'TX',
+      postalCode: '73301',
+    },
+    buildingCount: 1,
+    unitType: {
+      namePrefix: 'rcUT',
+      description: 'RC automation unit type',
+      bedrooms: '2',
+      bathrooms: '1',
+      marketRent: '1500',
+      rentCategory: 'Auto Rent Charge',
+      requiredDeposit: '1200',
+      depositCategory: 'Security Deposit',
+      squareFootage: '950',
+      maximumOccupancy: '4',
+    },
+    unitTypeCount: 1,
+    unit: {
+      numberPrefix: 'rcU',
+      floor: '1',
+      status: 'Ready',
+      streetAddress: 'Rose street 61',
+      city: 'Michigan',
+      province: 'TX',
+      postalCode: '75001',
+    },
+    unitCount: 1,
+  },
+  // Resident cases
   'QA-08': {
     property: 'Beta Tree - Automation',
     building: {
@@ -90,11 +169,51 @@ const rcTestData: typeof qaTestData = {
 
 // Regression environment test data
 const regressionTestData: typeof qaTestData = {
-  'QA-08': {
+  // Applicant cases
+  'QA-07': {
     // Not Beta Tree - Automation: that property exists on regression but the New
     // Applicant form's fill-with-test-data shortcut never fetches available units
     // for it, so the form is never completed. Core Automation 2026 is the property
-    // this case runs against on regression.
+    // the applicant cases run against on regression.
+    property: 'Core Automation 2026',
+    building: {
+      namePrefix: 'regBld',
+      floors: '4',
+      description: 'Regression automation building',
+      streetAddress: '100 Automation Way',
+      city: 'Austin',
+      province: 'TX',
+      postalCode: '73301',
+    },
+    buildingCount: 1,
+    unitType: {
+      namePrefix: 'regUT',
+      description: 'Regression automation unit type',
+      bedrooms: '2',
+      bathrooms: '1',
+      marketRent: '1500',
+      rentCategory: 'Accelerated Rent Charges',
+      requiredDeposit: '1200',
+      depositCategory: 'Security Deposit',
+      squareFootage: '950',
+      maximumOccupancy: '4',
+    },
+    unitTypeCount: 1,
+    unit: {
+      numberPrefix: 'regU',
+      floor: '1',
+      status: 'Ready',
+      streetAddress: 'Rose street 61',
+      city: 'Michigan',
+      province: 'TX',
+      postalCode: '75001',
+    },
+    unitCount: 1,
+  },
+  // Resident cases
+  'QA-08': {
+    // Core Automation 2026 for the same reason as QA-07 above: on regression the New
+    // Applicant form never fetches available units for Beta Tree - Automation.
     property: 'Core Automation 2026',
     building: {
       namePrefix: 'regBld',

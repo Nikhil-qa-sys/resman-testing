@@ -11,7 +11,7 @@ import { NewUnitPage } from '../../../playwright-utils/UI/pages/property/unit/ne
 import { ApplicantsPage } from '../../../playwright-utils/UI/pages/accounts/applicant/applicants-page'
 import { NewApplicantPage } from '../../../playwright-utils/UI/pages/accounts/applicant/new-applicant-page'
 import { ApplicantDetailPage } from '../../../playwright-utils/UI/pages/accounts/applicant/applicant-detail-page'
-import { testData } from '../../../playwright-utils/UI/test-data/residents.data'
+import { testData } from '../../../playwright-utils/UI/test-data/accounts.data'
 
 let residentBuildingName = ''
 let residentUnitTypeName = ''
